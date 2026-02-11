@@ -1,0 +1,322 @@
+{% extends 'templates/dashboard_base.html' %}
+{% load static %}
+
+
+{% block title %}Tenant List{% endblock %}
+
+{% block content %}
+    <div class="app-container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <i class="fas fa-building"></i>
+                    <span>PROPERTIA</span>
+                </div>
+            </div>
+            <div class="sidebar-menu">
+                <div class="menu-item active">
+                    <i class="fas fa-home"></i>
+                    <span>Dashboard</span>
+                </div>
+                <div class="menu-item">
+                    <i class="fas fa-building"></i>
+                    <span>Properties</span>
+                </div>
+                <div class="menu-item">
+                    <i class="fas fa-user-friends"></i>
+                    <span>Tenants</span>
+                </div>
+                <div class="menu-item">
+                    <i class="fas fa-file-contract"></i>
+                    <span>Leases</span>
+                </div>
+                <div class="menu-item">
+                    <i class="fas fa-tools"></i>
+                    <span>Maintenance</span>
+                </div>
+                <div class="menu-item">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Reports</span>
+                </div>
+                <div class="menu-item">
+                    <i class="fas fa-cog"></i>
+                    <span>Settings</span>
+                </div>
+                <div class="menu-item">
+                    <i class="fas fa-question-circle"></i>
+                    <span>Support</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <div class="header">
+                <button class="mobile-menu-toggle">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <div class="search-bar">
+                    <i class="fas fa-search"></i>
+                    <input type="text" placeholder="Search properties, tenants, leases...">
+                </div>
+                <div class="header-actions">
+                    <div class="notification-bell">
+                        <i class="fas fa-bell"></i>
+                        <span class="notification-badge">3</span>
+                    </div>
+                    <button class="theme-toggle" id="themeToggle">
+                        <i class="fas fa-moon"></i>
+                    </button>
+                    <div class="user-profile">
+                        <div class="avatar">JS</div>
+                        <div class="user-name">John Smith</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="dashboard">
+                <h1 class="page-title"><i class="fas fa-home"></i> Dashboard</h1>
+                
+                <!-- Stats Cards -->
+                <div class="stats-container">
+                    <div class="stat-card">
+                        <div class="stat-header">
+                            <div>
+                                <div class="stat-value">24</div>
+                                <div class="stat-label">Properties</div>
+                            </div>
+                            <div class="stat-icon properties">
+                                <i class="fas fa-building"></i>
+                            </div>
+                        </div>
+                        <div class="stat-trend trend-up">
+                            <i class="fas fa-arrow-up"></i>
+                            <span>12% increase from last month</span>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-header">
+                            <div>
+                                <div class="stat-value">86</div>
+                                <div class="stat-label">Tenants</div>
+                            </div>
+                            <div class="stat-icon tenants">
+                                <i class="fas fa-users"></i>
+                            </div>
+                        </div>
+                        <div class="stat-trend trend-up">
+                            <i class="fas fa-arrow-up"></i>
+                            <span>8% increase from last month</span>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-header">
+                            <div>
+                                <div class="stat-value">$42,850</div>
+                                <div class="stat-label">Monthly Revenue</div>
+                            </div>
+                            <div class="stat-icon revenue">
+                                <i class="fas fa-dollar-sign"></i>
+                            </div>
+                        </div>
+                        <div class="stat-trend trend-up">
+                            <i class="fas fa-arrow-up"></i>
+                            <span>5.3% increase from last month</span>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-header">
+                            <div>
+                                <div class="stat-value">7</div>
+                                <div class="stat-label">Maintenance Requests</div>
+                            </div>
+                            <div class="stat-icon maintenance">
+                                <i class="fas fa-tools"></i>
+                            </div>
+                        </div>
+                        <div class="stat-trend trend-down">
+                            <i class="fas fa-arrow-down"></i>
+                            <span>3 resolved today</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Main Content Grid -->
+                <div class="content-grid">
+                    <div>
+                        <!-- Properties Section -->
+                        <div class="card">
+                            <div class="card-header">
+                                <h2 class="card-title"><i class="fas fa-building"></i> Recent Properties</h2>
+                                <button class="action-btn outline">
+                                    <i class="fas fa-plus"></i> Add Property
+                                </button>
+                            </div>
+                            <div class="card-body">
+                                <div class="property-grid">
+                                    <!-- Property 1 -->
+                                    <div class="property-card">
+                                        <div class="property-img">
+                                            <i class="fas fa-home"></i>
+                                        </div>
+                                        <div class="property-details">
+                                            <h3 class="property-title">Luxury Downtown Apartment</h3>
+                                            <p class="property-address">
+                                                <i class="fas fa-map-marker-alt"></i> 123 Main St, New York, NY
+                                            </p>
+                                            <div class="property-meta">
+                                                <div class="property-price">$3,200/mo</div>
+                                                <div class="property-status status-leased">Leased</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Property 2 -->
+                                    <div class="property-card">
+                                        <div class="property-img">
+                                            <i class="fas fa-building"></i>
+                                        </div>
+                                        <div class="property-details">
+                                            <h3 class="property-title">Modern Office Space</h3>
+                                            <p class="property-address">
+                                                <i class="fas fa-map-marker-alt"></i> 456 Business Ave, Chicago, IL
+                                            </p>
+                                            <div class="property-meta">
+                                                <div class="property-price">$5,500/mo</div>
+                                                <div class="property-status status-available">Available</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Property 3 -->
+                                    <div class="property-card">
+                                        <div class="property-img">
+                                            <i class="fas fa-store"></i>
+                                        </div>
+                                        <div class="property-details">
+                                            <h3 class="property-title">Retail Storefront</h3>
+                                            <p class="property-address">
+                                                <i class="fas fa-map-marker-alt"></i> 789 Market St, San Francisco, CA
+                                            </p>
+                                            <div class="property-meta">
+                                                <div class="property-price">$4,800/mo</div>
+                                                <div class="property-status status-maintenance">Maintenance</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Property 4 -->
+                                    <div class="property-card">
+                                        <div class="property-img">
+                                            <i class="fas fa-home"></i>
+                                        </div>
+                                        <div class="property-details">
+                                            <h3 class="property-title">Suburban Family Home</h3>
+                                            <p class="property-address">
+                                                <i class="fas fa-map-marker-alt"></i> 321 Oak Lane, Austin, TX
+                                            </p>
+                                            <div class="property-meta">
+                                                <div class="property-price">$2,900/mo</div>
+                                                <div class="property-status status-available">Available</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <!-- Quick Actions -->
+                        <div class="card">
+                            <div class="card-header">
+                                <h2 class="card-title"><i class="fas fa-bolt"></i> Quick Actions</h2>
+                            </div>
+                            <div class="card-body">
+                                <div class="quick-actions">
+                                    <div class="quick-action add-property">
+                                        <i class="fas fa-home"></i>
+                                        <span>Add Property</span>
+                                    </div>
+                                    <div class="quick-action add-tenant">
+                                        <i class="fas fa-user-plus"></i>
+                                        <span>Add Tenant</span>
+                                    </div>
+                                    <div class="quick-action create-lease">
+                                        <i class="fas fa-file-contract"></i>
+                                        <span>Create Lease</span>
+                                    </div>
+                                    <div class="quick-action maintenance">
+                                        <i class="fas fa-tools"></i>
+                                        <span>New Maintenance Request</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Recent Tenants -->
+                        <div class="card">
+                            <div class="card-header">
+                                <h2 class="card-title"><i class="fas fa-users"></i> Recent Tenants</h2>
+                            </div>
+                            <div class="card-body">
+                                <div class="tenant-list">
+                                    <div class="tenant-item">
+                                        <div class="tenant-avatar">AL</div>
+                                        <div class="tenant-info">
+                                            <h4>Alex Johnson</h4>
+                                            <p>Luxury Downtown Apartment</p>
+                                        </div>
+                                        <button class="action-btn outline">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                    </div>
+                                    <div class="tenant-item">
+                                        <div class="tenant-avatar">MW</div>
+                                        <div class="tenant-info">
+                                            <h4>Maria Williams</h4>
+                                            <p>Suburban Family Home</p>
+                                        </div>
+                                        <button class="action-btn outline">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                    </div>
+                                    <div class="tenant-item">
+                                        <div class="tenant-avatar">RK</div>
+                                        <div class="tenant-info">
+                                            <h4>Robert Kim</h4>
+                                            <p>Modern Office Space</p>
+                                        </div>
+                                        <button class="action-btn outline">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                    </div>
+                                    <div class="tenant-item">
+                                        <div class="tenant-avatar">SJ</div>
+                                        <div class="tenant-info">
+                                            <h4>Sarah Jones</h4>
+                                            <p>Retail Storefront</p>
+                                        </div>
+                                        <button class="action-btn outline">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <button class="action-btn" style="width: 100%; margin-top: 15px;">
+                                    <i class="fas fa-users"></i> View All Tenants
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="{% static 'js/main.js' %}"></script>
+
+{% endblock %}

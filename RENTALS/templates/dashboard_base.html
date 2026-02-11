@@ -1,0 +1,39 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>PROPATIA | {% block title %}Dashboard{% endblock %}</title>
+    <style>
+        .container { display: flex; }
+        .sidebar { width: 250px; background: #f4f4f4; height: 100vh; padding: 20px; }
+        .main-content { flex: 1; padding: 20px; }
+    </style>
+    <link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+</head>
+<body>
+    <div class="container">
+        <nav class="sidebar">
+            <h2>PROPATIA</h2>
+            <ul>
+                #<li><a href="{% url 'dashboard_home' %}">Dashboard</a></li>
+                <li><a href="{% url 'properties_home' %}">Properties</a></li>
+                <li><a href="{% url 'tenants_home' %}">Tenants</a></li>
+                <li><a href="{% url 'payments_home' %}">Payments</a></li>
+                <li><a href="{% url 'leases_home' %}">Leases</a></li>
+                <li><a href="{% url 'arrears_home' %}">Arrears</a></li>
+                <li><a href="{% url 'invoices_home' %}">Invoices</a></li>
+                <li><a href="{% url 'water_bills_home' %}">Water Bills</a></li>
+
+                
+            </ul>
+        </nav>
+
+        <main class="main-content">
+            {% block content %}
+            {% endblock %}
+        </main>
+    </div>
+</body>
+</html>
+
