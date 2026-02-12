@@ -1,10 +1,53 @@
 from django.shortcuts import render
 from django.views import View
-
-
-# Create your views here.
-from django.shortcuts import render
-from django.http import HttpResponse
+from properties.models import Property
+from tenants.models import Tenant
+from payments.models import Payment
+from django.db.models import Sum, Count
+from django.utils import timezone
+from datetime import timedelta
 
 def index(request):
-    return render(request, 'dashboard/dashboard.html', {})
+    # Get counts and statistics
+    total_properties = Property.objects.count()
+    total_tenants = Tenant.objects.count()
+    total_units = Property.objects.aggregate(total_units=Count('id'))['total_units']
+    maintenance_requests = 0  # No maintenance model created yet
+    
+    # Get recent properties (last 5)
+    recent_properties = Property.objects.all()[:5]
+    
+    # Get recent tenants (last 4)
+    recent_tenants = Tenant.objects.all()[:4]
+    
+    # Calculate monthly revenue (payments from last 30 days)
+    thirty_days_ago = timezone.now() - timedelta(days=30)
+    monthly_revenue = Payment.objects.filter(
+        date__gte=thirty_days_ago
+    ).aggregate(total=Sum('amount'))['total'] or 0
+    
+    # Calculate percentage changes
+    previous_month = timezone.now() - timedelta(days=60)
+    prev_month_revenue = Payment.objects.filter(
+        date__gte=previous_month,
+        date__lt=timezone.now() - timedelta(days=30)
+    ).aggregate(total=Sum('amount'))['total'] or 0
+    
+    revenue_increase = 0
+    if prev_month_revenue > 0:
+        revenue_increase = ((monthly_revenue - prev_month_revenue) / prev_month_revenue) * 100
+    
+    context = {
+        'total_properties': total_properties,
+        'total_tenants': total_tenants,
+        'total_units': total_units,
+        'maintenance_requests': maintenance_requests,
+        'monthly_revenue': monthly_revenue,
+        'revenue_increase': round(revenue_increase, 1),
+        'recent_properties': recent_properties,
+        'recent_tenants': recent_tenants,
+        'user_initial': request.user.first_name[0] + request.user.last_name[0] if request.user.is_authenticated and request.user.first_name and request.user.last_name else 'U',
+        'user_name': f"{request.user.first_name} {request.user.last_name}" if request.user.is_authenticated and request.user.first_name else 'User'
+    }
+    
+    return render(request, 'dashboard/dashboard.html', context)

@@ -1,12 +1,20 @@
 {% extends 'templates/dashboard_base.html' %}
 {% load static %}
 
+
+{% block extra_js %}
+<script src="{% static 'js/tenants.js' %}"></script>
+{% endblock %}
+
 {% block content %}
 <div class="container-fluid py-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2>Tenants</h2>
         <div class="d-flex gap-2">
-            <button class="btn btn-outline-dark">Upload Tenants</button>
+            <button type="button" id="deleteSelectedTenantsBtn" class="btn btn-danger shadow-sm" style="display: none;">
+                <i class="bi bi-trash me-1"></i> DELETE SELECTED
+            </button>
+            <button class="btn btn-outline-dark" data-bs-toggle="modal" data-bs-target="#uploadTenantsModal">Upload Tenants</button>
             <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addTenantModal">+ Add Tenant</button>
         </div>
     </div>
@@ -19,16 +27,19 @@
                     <select name="property" class="form-select">
                         <option value="">All Properties</option>
                         {% for p in properties %}
-                        <option value="{{ p.id }}">{{ p.name }}</option>
+                        <option value="{{ p.id }}" {% if selected_property|stringformat:"s" == p.id|stringformat:"s" %}selected{% endif %}>{{ p.name }}</option>
                         {% endfor %}
                     </select>
                 </div>
                 <div class="col-md-4">
                     <select name="status" class="form-select">
-                        <option value="">All Status</option>
-                        <option value="active">Active</option>
-                        <option value="inactive">Inactive</option>
+                        <option value="" {% if not selected_status %}selected{% endif %}>All Status</option>
+                        <option value="active" {% if selected_status == "active" %}selected{% endif %}>Active</option>
+                        <option value="inactive" {% if selected_status == "inactive" %}selected{% endif %}>Inactive</option>
                     </select>
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">FILTER</button>
                 </div>
             </form>
         </div>
@@ -42,7 +53,9 @@
             <table class="table table-hover align-middle mb-0">
                 <thead class="bg-light">
                     <tr>
-                        <th class="ps-4"><input type="checkbox"></th>
+                        <th class="ps-4">
+                            <input type="checkbox" id="selectAllTenants" class="form-check-input">
+                        </th>
                         <th>Name</th>
                         <th>Property</th>
                         <th>Unit</th>
@@ -54,17 +67,23 @@
                 <tbody>
                     {% for tenant in tenants %}
                     <tr>
-                        <td class="ps-4"><input type="checkbox"></td>
-                        <td>{{ tenant.name }}</td>
-                        <td>{{ tenant.unit.property.name }}</td>
-                        <td>{{ tenant.unit.name }}</td>
+                        <td class="ps-4">
+                            <input type="checkbox" class="form-check-input tenant-checkbox" value="{{ tenant.id }}">
+                        </td>
+                        <td>{{ tenant.first_name }} {{ tenant.last_name }}</td>
+                        <td>{% if tenant.unit %}{{ tenant.unit.property.name }}{% else %}<span class="text-muted">-</span>{% endif %}</td>
+                        <td>{% if tenant.unit %}{{ tenant.unit.name }}{% else %}<span class="text-muted">-</span>{% endif %}</td>
                         <td>{{ tenant.phone_number }}</td>
-                        <td>{{ tenant.next_of_kin|default:"-" }}</td>
+                        <td>{{ tenant.next_of_kin_name|default:"-" }}</td>
                         <td>
                             <span class="badge bg-success-subtle text-success rounded-pill px-3">
                                 {{ tenant.status }}
                             </span>
                         </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center py-4 text-muted">No tenants found matching your criteria.</td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -73,52 +92,225 @@
     </div>
 </div>
 
-<div class="modal fade" id="addTenantModal" tabindex="-1">
+<div class="modal fade" id="addTenantModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
-        <div class="modal-content">
+        <div class="modal-content border-0 shadow-lg">
             <div class="modal-header border-0">
                 <h5 class="modal-title fw-bold">Add New Tenant</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <form method="post">
+            <form id="addTenantForm" method="post" action="{% url 'tenants:tenant_list' %}">
                 {% csrf_token %}
-                <div class="modal-body">
+                <div id="tenantErrors" class="alert alert-danger mx-4 mt-3" style="display: none;"></div>
+                <div class="modal-body px-4">
                     <div class="mb-3">
-                        <label class="form-label small fw-bold">Unit</label>
-                        {{ form.unit }}
+                        <label class="form-label fw-bold">First Name</label>
+                        {{ form.first_name }}
+                        {% if form.first_name.errors %}
+                            <div class="text-danger small mt-1">{{ form.first_name.errors }}</div>
+                        {% endif %}
                     </div>
                     <div class="mb-3">
-                        <label class="form-label small fw-bold">Tenant Name</label>
-                        {{ form.name }}
+                        <label class="form-label fw-bold">Last Name</label>
+                        {{ form.last_name }}
+                        {% if form.last_name.errors %}
+                            <div class="text-danger small mt-1">{{ form.last_name.errors }}</div>
+                        {% endif %}
                     </div>
                     <div class="mb-3">
-                        <label class="form-label small fw-bold">Phone Number</label>
+                        <label class="form-label fw-bold">Phone Number</label>
                         {{ form.phone_number }}
+                        {% if form.phone_number.errors %}
+                            <div class="text-danger small mt-1">{{ form.phone_number.errors }}</div>
+                        {% endif %}
                     </div>
                     <div class="mb-3">
-                        <label class="form-label small fw-bold">Next of Kin</label>
-                        {{ form.next_of_kin }}
+                        <label class="form-label fw-bold">Unit</label>
+                        {{ form.unit }}
+                        {% if form.unit.errors %}
+                            <div class="text-danger small mt-1">{{ form.unit.errors }}</div>
+                        {% endif %}
                     </div>
                     <div class="mb-3">
-                        <label class="form-label small fw-bold">Description</label>
+                        <label class="form-label fw-bold">Next of Kin Name</label>
+                        {{ form.next_of_kin_name }}
+                        {% if form.next_of_kin_name.errors %}
+                            <div class="text-danger small mt-1">{{ form.next_of_kin_name.errors }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Next of Kin Phone</label>
+                        {{ form.next_of_kin_phone_number }}
+                        {% if form.next_of_kin_phone_number.errors %}
+                            <div class="text-danger small mt-1">{{ form.next_of_kin_phone_number.errors }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Description</label>
                         {{ form.description }}
-                    </div>
-                    <div class="form-check mb-2">
-                        {{ form.deposit_required }}
-                        <label class="form-check-label" for="depositCheck">Deposit Required</label>
+                        {% if form.description.errors %}
+                            <div class="text-danger small mt-1">{{ form.description.errors }}</div>
+                        {% endif %}
                     </div>
                     <div class="mb-3">
-                        <label class="form-label small fw-bold">Deposit Amount</label>
+                        <label class="form-label fw-bold">Status</label>
+                        {{ form.status }}
+                        {% if form.status.errors %}
+                            <div class="text-danger small mt-1">{{ form.status.errors }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Deposit Required</label>
+                        <div class="form-check">
+                            {{ form.deposit_required }}
+                            {% if form.deposit_required.errors %}
+                                <div class="text-danger small mt-1">{{ form.deposit_required.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Deposit Amount</label>
                         {{ form.deposit_amount }}
+                        {% if form.deposit_amount.errors %}
+                            <div class="text-danger small mt-1">{{ form.deposit_amount.errors }}</div>
+                        {% endif %}
                     </div>
                 </div>
-                <div class="modal-footer border-0">
-                    <button type="submit" class="btn btn-primary px-4">Add Tenant</button>
-                    <button type="button" class="btn btn-light px-4" data-bs-dismiss="modal">Clear</button>
+                <div class="modal-footer border-0 px-4 pb-4">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Add Tenant</button>
                 </div>
             </form>
         </div>
     </div>
 </div>
+
+<div class="modal fade" id="uploadTenantsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header border-0">
+                <h5 class="modal-title fw-bold">Upload Tenants</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="uploadTenantsForm" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="modal-body px-4">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">CSV or XLSX File</label>
+                        <input type="file" id="tenantsFile" name="file" class="form-control" accept=".csv,.xlsx" required>
+                        <small class="text-muted d-block mt-2"><strong>Required Headers:</strong> first_name, last_name, phone_number<br><strong>Optional Headers:</strong> next_of_kin_name, next_of_kin_phone_number, description, status, unit, deposit_required, deposit_amount</small>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 px-4 pb-4">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Upload</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const uploadForm = document.getElementById('uploadTenantsForm');
+    const addTenantForm = document.getElementById('addTenantForm');
+    
+    // Handle Add Tenant Form
+    if (addTenantForm) {
+        addTenantForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            
+            fetch('{% url "tenants:tenant_list" %}', {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: formData
+            })
+            .then(response => response.text())
+            .then(html => {
+                // Check if response contains form errors
+                if (html.includes('errorlist') || html.includes('This field is required')) {
+                    // Display errors in modal
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(html, 'text/html');
+                    const errorElements = doc.querySelectorAll('ul.errorlist');
+                    
+                    let errorHtml = '<ul>';
+                    errorElements.forEach(el => {
+                        const items = el.querySelectorAll('li');
+                        items.forEach(item => {
+                            errorHtml += '<li>' + item.textContent + '</li>';
+                        });
+                    });
+                    errorHtml += '</ul>';
+                    
+                    if (errorElements.length > 0) {
+                        document.getElementById('tenantErrors').innerHTML = errorHtml;
+                        document.getElementById('tenantErrors').style.display = 'block';
+                    } else {
+                        location.reload();
+                    }
+                } else {
+                    // Success - reload page
+                    location.reload();
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred');
+            });
+        });
+    }
+    
+    if (uploadForm) {
+        uploadForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const fileInput = document.getElementById('tenantsFile');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                alert('Please select a file');
+                return;
+            }
+            
+            // Validate file type
+            const validTypes = ['text/csv', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'];
+            if (!validTypes.includes(file.type) && !file.name.endsWith('.csv') && !file.name.endsWith('.xlsx')) {
+                alert('Please upload a CSV or XLSX file');
+                return;
+            }
+            
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+            
+            fetch('/tenants/upload/', {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(`Successfully uploaded ${data.count} tenants`);
+                    location.reload();
+                } else {
+                    alert(data.message || 'Failed to upload tenants');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while uploading tenants');
+            });
+        });
+    }
+});
+</script>
+
 {% endblock %}
- 

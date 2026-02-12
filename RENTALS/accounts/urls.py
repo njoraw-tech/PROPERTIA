@@ -1,4 +1,4 @@
-from django.urls import path
+from django.urls import path, reverse_lazy
 from django.contrib.auth import views as auth_views
 from . import views
 
@@ -16,5 +16,11 @@ urlpatterns = [
     
     # Password Management (Built-in Django views)
     path('password-change/', auth_views.PasswordChangeView.as_view(template_name='accounts/password_change.html'), name='change_password'),
-    #path('password-change/done/', auth_views.PasswordChangeDoneView.as_view(template_name='accounts/password_change_done.html'), name='password_change_done'),
+    path('password-change/', 
+        auth_views.PasswordChangeView.as_view(
+            template_name='accounts/password_change.html',
+            # This line fixes the error by directing to your login name
+            success_url=reverse_lazy('accounts:login') 
+        ), 
+        name='change_password'),#path('password-change/done/', auth_views.PasswordChangeDoneView.as_view(template_name='accounts/password_change_done.html'), name='password_change_done'),
 ]

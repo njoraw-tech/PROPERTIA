@@ -18,3 +18,19 @@ class Unit(models.Model):
 
     def __str__(self):
         return f"{self.name} - {self.property.name}"
+    
+    def get_assigned_tenant(self):
+        """Get the currently assigned tenant for this unit"""
+        from tenants.models import Tenant
+        return self.tenants.first()
+    
+    def get_tenant_display_name(self):
+        """Get full name of assigned tenant"""
+        tenant = self.get_assigned_tenant()
+        if tenant:
+            return f"{tenant.first_name} {tenant.last_name}"
+        return None
+    
+    def is_occupied(self):
+        """Check if unit is occupied based on assigned tenant"""
+        return self.get_assigned_tenant() is not None
