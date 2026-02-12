@@ -4,5 +4,24 @@ from django.shortcuts import render
 from django.shortcuts import render
 from django.http import HttpResponse
 
-def index(request):
-    return HttpResponse("Hello! This is the Arrears page.")
+app_name = 'properties'
+
+from django.shortcuts import render, redirect
+from .models import Property
+from .forms import PropertyForm
+
+
+
+def property_list(request):
+    if request.method == "POST":
+        form = PropertyForm(request.POST)
+        if form.is_valid():
+            form.save()
+            return redirect('properties:property_list')
+    
+    properties = Property.objects.all()
+    form = PropertyForm()
+    return render(request, 'properties/propertyIndex.html', {
+        'properties': properties,
+        'form': form
+    })

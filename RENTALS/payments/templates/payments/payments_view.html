@@ -1,0 +1,101 @@
+{% extends 'templates/dashboard_base.html' %}
+{% load static %}
+
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold mb-0">Payments</h2>
+            <p class="text-muted">Track your payments</p>
+        </div>
+        <div class="d-flex gap-2">
+            <button class="btn btn-light border" data-bs-toggle="modal" data-bs-target="#uploadModal">Upload Payments</button>
+            <button class="btn btn-primary px-4" data-bs-toggle="modal" data-bs-target="#addPaymentModal">Add Payment</button>
+        </div>
+    </div>
+
+    <div class="card shadow-sm border-0">
+        <div class="card-body p-4">
+            <h5 class="fw-bold mb-4">Payment List</h5>
+            
+            {% if payments %}
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead class="bg-light">
+                            <tr>
+                                <th>Date</th>
+                                <th>Property</th>
+                                <th>Tenant</th>
+                                <th>Amount</th>
+                                <th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for payment in payments %}
+                            <tr>
+                                <td>{{ payment.date }}</td>
+                                <td>{{ payment.property.name }}</td>
+                                <td>{{ payment.tenant.name }}</td>
+                                <td class="fw-bold">KES {{ payment.amount }}</td>
+                                <td class="text-muted small">{{ payment.description }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="text-center py-5">
+                    <p class="text-muted">No payments found. Record your first payment to get started.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="addPaymentModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold">Add Payment</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post">
+                {% csrf_token %}
+                <div class="modal-body p-4">
+                    <div class="mb-3">{{ form.property }}</div>
+                    <div class="mb-3">{{ form.tenant }}</div>
+                    <div class="mb-3">{{ form.amount }}</div>
+                    <div class="mb-3">{{ form.description }}</div>
+                    <div class="mb-3">{{ form.date }}</div>
+                </div>
+                <div class="modal-footer border-0 justify-content-end pb-4">
+                    <button type="button" class="btn btn-light px-4" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary px-4">Add Payment</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="uploadModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold">Upload Payments</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <p class="text-muted small">Upload a CSV or XLSX file with headers: PROPERTY, TENANT name, AMOUNT, DESCRIPTION, PAYMENT_DATE</p>
+                <div class="input-group mb-3">
+                    <input type="file" class="form-control" id="inputGroupFile02">
+                </div>
+            </div>
+            <div class="modal-footer border-0 justify-content-end pb-4">
+                <button type="button" class="btn btn-light px-4" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary px-4 opacity-50" disabled>Preview Data</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

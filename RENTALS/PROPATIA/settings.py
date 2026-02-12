@@ -38,6 +38,8 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
 
+
+    # Local apps
     'dashboard.apps.DashboardConfig',
     'arrears.apps.ArrearsConfig',
     'leases.apps.LeasesConfig',
@@ -49,6 +51,11 @@ INSTALLED_APPS = [
     'maintenance.apps.MaintenanceConfig',
     'accounts.apps.AccountsConfig',
     'water_bills.apps.WaterBillsConfig',
+    "units.apps.UnitsConfig",
+
+    # Third-party apps      
+
+   
 ]
 
 MIDDLEWARE = [
@@ -132,3 +139,8 @@ STATIC_URL = 'static/'
 STATICFILES_DIRS = [
     BASE_DIR / "static",
 ]
+
+# Default primary key field type
+# https://docs.djangoproject.com/en/6.0/ref/settings/#default-auto-field
+LOGIN_REDIRECT_URL = 'dashboard_home'  # Or whatever the name of your dashboard URL is
+LOGOUT_REDIRECT_URL = 'accounts:login'

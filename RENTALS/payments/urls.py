@@ -16,8 +16,11 @@ Including another URLconf
 """
 from django.urls import path
 from . import views  # Import views from the current folder
+from .views import payment_list  # Import the specific view function
 
+
+app_name = 'payments'  # Set the app name for namespacing
 urlpatterns = [
     # Point to a view function, NOT an include()
-    path('', views.index, name='payments_home'), 
+    path('', views.payment_list, name='payment_list'), 
 ]

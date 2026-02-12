@@ -24,6 +24,7 @@ urlpatterns = [
     path('', views.index, name='home'),  # This is the root URL
     path('dashboard/', include('dashboard.urls'),name='dashboard'),
     path('arrears/', include('arrears.urls'), name='arrears'),
+    path('units/', include('units.urls'), name='units'),
     path('leases/', include('leases.urls'), name='leases'),
     path('invoices/', include('invoices.urls'), name='invoices'),
     path('payments/', include('payments.urls'), name='payments'),

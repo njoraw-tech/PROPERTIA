@@ -1,0 +1,32 @@
+{% extends 'templates/dashboard_base.html' %}
+{% load static %}
+
+
+{% block content %}
+    <h1>Paymnets</h1>
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div>
+            <label for="id_name"> select property</label>
+            <input type="text" name="name" id="id_name" required>
+        </div>
+          <div>
+            <label for="id_name"> select unit</label>
+            <input type="text" name="name" id="id_name" required>
+        </div>
+        <div>       
+            <label for="id_address">date:</label>
+            <input type="text" name="address" id="id_address" required>
+        </div>
+         <div>       
+            <label for="id_address">descrittion</label>
+            <input type="text" name="address" id="id_address" required>
+        </div>
+         <div>       
+            <label for="id_address">amount</label>
+            <input type="text" name="address" id="id_address" required>
+        </div>
+        <button type="submit">add paymnets</button>
+        <button type="submit">CLEAR</button>
+    </form>
+{% endblock %}

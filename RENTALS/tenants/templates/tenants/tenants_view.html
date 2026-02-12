@@ -1,0 +1,124 @@
+{% extends 'templates/dashboard_base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Tenants</h2>
+        <div class="d-flex gap-2">
+            <button class="btn btn-outline-dark">Upload Tenants</button>
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addTenantModal">+ Add Tenant</button>
+        </div>
+    </div>
+
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-body">
+            <h5 class="mb-3">Filters</h5>
+            <form method="GET" class="row g-3">
+                <div class="col-md-4">
+                    <select name="property" class="form-select">
+                        <option value="">All Properties</option>
+                        {% for p in properties %}
+                        <option value="{{ p.id }}">{{ p.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <select name="status" class="form-select">
+                        <option value="">All Status</option>
+                        <option value="active">Active</option>
+                        <option value="inactive">Inactive</option>
+                    </select>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="card shadow-sm border-0">
+        <div class="card-header bg-white py-3">
+            <h5 class="mb-0">Tenant List</h5>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="bg-light">
+                    <tr>
+                        <th class="ps-4"><input type="checkbox"></th>
+                        <th>Name</th>
+                        <th>Property</th>
+                        <th>Unit</th>
+                        <th>Phone</th>
+                        <th>Next of Kin</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for tenant in tenants %}
+                    <tr>
+                        <td class="ps-4"><input type="checkbox"></td>
+                        <td>{{ tenant.name }}</td>
+                        <td>{{ tenant.unit.property.name }}</td>
+                        <td>{{ tenant.unit.name }}</td>
+                        <td>{{ tenant.phone_number }}</td>
+                        <td>{{ tenant.next_of_kin|default:"-" }}</td>
+                        <td>
+                            <span class="badge bg-success-subtle text-success rounded-pill px-3">
+                                {{ tenant.status }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="addTenantModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header border-0">
+                <h5 class="modal-title fw-bold">Add New Tenant</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Unit</label>
+                        {{ form.unit }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Tenant Name</label>
+                        {{ form.name }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Phone Number</label>
+                        {{ form.phone_number }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Next of Kin</label>
+                        {{ form.next_of_kin }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Description</label>
+                        {{ form.description }}
+                    </div>
+                    <div class="form-check mb-2">
+                        {{ form.deposit_required }}
+                        <label class="form-check-label" for="depositCheck">Deposit Required</label>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Deposit Amount</label>
+                        {{ form.deposit_amount }}
+                    </div>
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="submit" class="btn btn-primary px-4">Add Tenant</button>
+                    <button type="button" class="btn btn-light px-4" data-bs-dismiss="modal">Clear</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+ 

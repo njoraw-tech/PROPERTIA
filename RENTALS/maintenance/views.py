@@ -5,4 +5,4 @@ from django.shortcuts import render
 from django.http import HttpResponse
 
 def index(request):
-    return HttpResponse("Hello! This is the Arrears page.")
+    return render(request, 'maintenance/maintenance_view.html', {})

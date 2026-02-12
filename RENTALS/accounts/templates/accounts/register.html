@@ -1,0 +1,95 @@
+{% extends 'templates/dashboard_base.html' %}
+
+{% load static %}
+
+{% block links %}
+    <link rel="stylesheet" href="{% static 'css/accounts.css' %}">
+{% endblock links %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow-sm border-0 p-4">
+                <h2 class="fw-bold mb-3 text-center">Create Account</h2>
+                <form method="POST" id="registerForm">
+                    {% csrf_token %}
+                    <input type="hidden" name="next" value="{{ request.GET.next }}">
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">First Name</label>
+                                <input type="text" name="first_name" class="form-control" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Last Name</label>
+                                <input type="text" name="last_name" class="form-control" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    {% for field in form %}
+                        {% if field.name != 'password1' and field.name != 'password2' %}
+                            <div class="mb-3">
+                                <label class="form-label">{{ field.label }}</label>
+                                {{ field }}
+                                {% if field.help_text %}
+                                    <small class="text-muted d-block">{{ field.help_text }}</small>
+                                {% endif %}
+                                {% for error in field.errors %}
+                                    <small class="text-danger">{{ error }}</small>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    {% endfor %}
+
+                    <div class="mb-3">
+                        <label class="form-label">Password</label>
+                        <input type="password" id="passwordField" name="password1" class="form-control" required>
+                        {% if form.password1.help_text %}
+                            <small class="text-muted d-block">{{ form.password1.help_text }}"</small>
+                        {% endif %}
+                        {% for error in form.password1.errors %}
+                            <small class="text-danger">{{ error }}</small>
+                        {% endfor %}
+                    </div>
+
+                    <div class="mb-3" id="confirmPasswordContainer" style="display: none;">
+                        <label class="form-label">Confirm Password</label>
+                        <input type="password" id="confirmPasswordField" name="password2" class="form-control">
+                        {% for error in form.password2.errors %}
+                            <small class="text-danger">{{ error }}</small>
+                        {% endfor %}
+                    </div>
+
+                    <div class="d-grid mt-4">
+                        <button type="submit" class="btn btn-primary">Register</button>
+                    </div>
+                </form>
+
+                <script>
+                    const passwordField = document.getElementById('passwordField');
+                    const confirmPasswordContainer = document.getElementById('confirmPasswordContainer');
+                    const confirmPasswordField = document.getElementById('confirmPasswordField');
+
+                    passwordField.addEventListener('input', function() {
+                        if (this.value.length > 0) {
+                            confirmPasswordContainer.style.display = 'block';
+                            confirmPasswordField.required = true;
+                        } else {
+                            confirmPasswordContainer.style.display = 'none';
+                            confirmPasswordField.required = false;
+                        }
+                    });
+                </script>
+                <div class="text-center mt-3">
+                    <small class="text-muted">Already have an account? <a href="{% url 'accounts:login' %}">Login here</a></small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

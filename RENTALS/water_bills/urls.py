@@ -19,5 +19,5 @@ from . import views  # Import views from the current folder
 
 urlpatterns = [
     # Point to a view function, NOT an include()
-    path('', views.index, name='water_bills_home'), 
+    path('', views.water_bill_list, name='water_bills_home'), 
 ]

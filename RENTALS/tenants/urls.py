@@ -17,7 +17,10 @@ Including another URLconf
 from django.urls import path
 from . import views  # Import views from the current folder
 
+
+app_name = 'tenants'  # Set the app name for namespacing
+
 urlpatterns = [
     # Point to a view function, NOT an include()
-    path('', views.index, name='tenants_home'), 
+    path('', views.tenant_list, name='tenant_list'), 
 ]

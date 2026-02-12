@@ -1,0 +1,114 @@
+{% extends 'templates/dashboard_base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Units</h2>
+        <div class="d-flex gap-2">
+            <button class="btn btn-outline-secondary"><i class="bi bi-upload"></i> UPLOAD UNITS</button>
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addUnitModal">+ ADD UNIT</button>
+        </div>
+    </div>
+
+    <div class="card shadow-sm mb-3 border-0">
+        <div class="card-body py-2">
+            <form method="GET" class="row g-2 justify-content-end">
+                <div class="col-md-3">
+                    <select name="property" class="form-select border-0 bg-light">
+                        <option value="">All Properties</option>
+                        {% for p in properties %}
+                        <option value="{{ p.id }}" {% if request.GET.property == p.id|stringformat:"i" %}selected{% endif %}>{{ p.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <select name="status" class="form-select border-0 bg-light">
+                        <option value="">All Status</option>
+                        <option value="occupied">Occupied</option>
+                        <option value="vacant">Vacant</option>
+                    </select>
+                </div>
+                <div class="col-md-1">
+                    <button type="submit" class="btn btn-dark w-100">Filter</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-body p-0">
+            <table class="table table-hover mb-0">
+                <thead class="bg-light">
+                    <tr>
+                        <th class="ps-4"><input type="checkbox"></th>
+                        <th>Unit</th>
+                        <th>Property</th>
+                        <th>Rent</th>
+                        <th>Status</th>
+                        <th>Tenant</th>
+                        <th class="text-end pe-4">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for unit in units %}
+                    <tr class="align-middle">
+                        <td class="ps-4"><input type="checkbox"></td>
+                        <td class="fw-bold">{{ unit.name }}</td>
+                        <td>{{ unit.property.name }}</td>
+                        <td>{{ unit.rent_amount }}</td>
+                        <td>
+                            <span class="badge {% if unit.status == 'occupied' %}bg-success-subtle text-success{% else %}bg-warning-subtle text-warning{% endif %}">
+                                {{ unit.status }}
+                            </span>
+                        </td>
+                        <td>{{ unit.tenant_name|default:"---" }}</td>
+                        <td class="text-end pe-4">
+                            <button class="btn btn-sm btn-light border"><i class="bi bi-person"></i> Detach</button>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="7" class="text-center py-4">No units found.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="addUnitModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content shadow-lg border-0">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold">Add New Unit</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post">
+                {% csrf_token %}
+                <div class="modal-body px-4">
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Property Name</label>
+                        {{ form.property }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Unit Name</label>
+                        {{ form.name }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Rent Amount</label>
+                        {{ form.rent_amount }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Description</label>
+                        {{ form.description }}
+                    </div>
+                </div>
+                <div class="modal-footer border-0 px-4 pb-4">
+                    <button type="submit" class="btn btn-primary px-4">Add Unit</button>
+                    <button type="button" class="btn btn-outline-secondary px-4" data-bs-dismiss="modal">Clear</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
