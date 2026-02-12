@@ -3,18 +3,30 @@ from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from .forms import UserRegisterForm, UserUpdateForm, ProfileUpdateForm
+from django.http import JsonResponse
+
+
 
 def register_view(request):
+    form = UserRegisterForm(request.POST or None)
     if request.method == 'POST':
-        form = UserRegisterForm(request.POST)
         if form.is_valid():
             user = form.save()
-            username = form.cleaned_data.get('username')
-            messages.success(request, f'Account created for {username}! You can now log in.')
-            # Redirecting to the namespace 'accounts:login' for consistency
-            return redirect('accounts:login')
-    else:
-        form = UserRegisterForm()
+            # Capture the role from the form and save to profile
+            user_role = form.cleaned_data.get('role')
+            user.profile.role = user_role
+            user.profile.save()
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({"success": True, "redirect_url": "/accounts/login/"})
+            else:
+                return redirect('accounts:login')
+        else:
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                # Send back the form HTML with errors
+                from django.template.loader import render_to_string
+                form_html = render_to_string('accounts/register_form.html', {'form': form}, request=request)
+                return JsonResponse({"success": False, "form_html": form_html}, status=400)
+            
     return render(request, 'accounts/register.html', {'form': form})
 
 @login_required

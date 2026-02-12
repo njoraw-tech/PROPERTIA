@@ -21,5 +21,7 @@ app_name = 'properties'  # Set the app name for namespacing
 
 urlpatterns = [
     # Point to a view function, NOT an include()
-    path('', views.property_list, name='properties_home'), 
+    path('', views.property_list, name='properties_home'),
+    path('edit/<int:pk>/', views.edit_property, name='edit_property'),
+    path('delete/', views.delete_properties, name='delete_properties'),
 ]

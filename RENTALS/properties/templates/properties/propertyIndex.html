@@ -1,10 +1,15 @@
 {% extends 'templates/dashboard_base.html' %}
 {% load static %}
 
-{% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/properties.css' %}">
-<link rel="stylesheet" href="{% static 'css/accounts.css' %}">
+{% block extra_css %}   
+    <link rel="stylesheet" href="{% static 'css/properties.css' %}">
 {% endblock %}
+
+
+ {% block extra_js %}
+    <script src="{% static 'js/properties.js' %}"></script>
+{% endblock extra_js %}
+
 
 {% block content %}
 <div class="container-fluid py-4">
@@ -13,9 +18,14 @@
             <h2 class="mb-1">Properties</h2>
             <p class="text-muted mb-0">Manage your real estate portfolio</p>
         </div>
-        <button type="button" class="btn btn-primary px-4 py-2 shadow-sm" data-bs-toggle="modal" data-bs-target="#addPropertyModal">
-            <i class="bi bi-plus-lg me-1"></i> ADD PROPERTY
-        </button>
+        <div class="d-flex gap-2">
+            <button type="button" id="deleteSelectedBtn" class="btn btn-danger px-4 py-2 shadow-sm" style="display: none;">
+                <i class="fas fa-trash me-1"></i> DELETE SELECTED
+            </button>
+            <button type="button" class="btn btn-primary px-4 py-2 shadow-sm" data-bs-toggle="modal" data-bs-target="#addPropertyModal">
+                <i class="fas fa-plus me-1"></i> ADD PROPERTY
+            </button>
+        </div>
     </div>
 
     <div class="card shadow-sm border-0 mb-4">
@@ -24,7 +34,7 @@
                 <table class="table table-hover align-middle mb-0">
                     <thead>
                         <tr>
-                            <th class="ps-4">Select</th>
+                            <th class="ps-4"><input type="checkbox" id="selectAllCheckbox" class="form-check-input"></th>
                             <th>Property Name</th>
                             <th>Address</th>
                             <th>County</th>
@@ -35,13 +45,13 @@
                     <tbody>
                         {% for property in properties %}
                         <tr>
-                            <td class="ps-4"><input type="checkbox" class="form-check-input"></td>
+                            <td class="ps-4"><input type="checkbox" class="form-check-input property-checkbox" value="{{ property.id }}"></td>
                             <td><strong>{{ property.name }}</strong></td>
                             <td class="text-muted">{{ property.address }}</td>
                             <td>{{ property.county }}</td>
                             <td><span class="badge bg-light text-dark border">{{ property.total_units }} Units</span></td>
                             <td class="text-end pe-4">
-                                <button class="btn btn-sm btn-outline-secondary rounded-pill px-3">Edit</button>
+                                <button class="btn btn-sm btn-outline-secondary rounded-pill px-3 editPropertyBtn" data-property-id="{{ property.id }}" data-bs-toggle="modal" data-bs-target="#editPropertyModal">Edit</button>
                             </td>
                         </tr>
                         {% endfor %}
@@ -59,8 +69,9 @@
                 <h5 class="modal-title fw-bold" style="font-size: 1.25rem;">Add New Property</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-                <form method="post" class="auth-form">
+                <form method="post" class="auth-form" id="addPropertyForm">
                     {% csrf_token %}
+                    <input type="hidden" id="propertyId" name="property_id" value="">
                     <div class="modal-body px-4">
                         <div class="row g-3">
                             <div class="col-12">
@@ -108,4 +119,245 @@
         </div>
     </div>
 </div>
+
+<div class="modal fade" id="editPropertyModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
+            <div class="modal-header border-0 pt-4 px-4">
+                <h5 class="modal-title fw-bold" style="font-size: 1.25rem;">Edit Property</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+                <form method="post" class="auth-form" id="editPropertyForm">
+                    {% csrf_token %}
+                    <input type="hidden" id="editPropertyId" name="property_id" value="">
+                    <div class="modal-body px-4">
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <label class="form-label">Property Name</label>
+                                <input type="text" id="editPropertyName" name="name" class="form-control">
+                            </div>
+                            
+                            <div class="col-12">
+                                <label class="form-label">Physical Address</label>
+                                <input type="text" id="editPropertyAddress" name="address" class="form-control">
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label class="form-label">County</label>
+                                <select id="editPropertyCounty" name="county" class="form-control">
+                                    <option value="">Select County</option>
+                                    <option value="Baringo">Baringo</option>
+                                    <option value="Bomet">Bomet</option>
+                                    <option value="Bungoma">Bungoma</option>
+                                    <option value="Busia">Busia</option>
+                                    <option value="Elgeyo-Marakwet">Elgeyo-Marakwet</option>
+                                    <option value="Embu">Embu</option>
+                                    <option value="Garissa">Garissa</option>
+                                    <option value="Homa Bay">Homa Bay</option>
+                                    <option value="Isiolo">Isiolo</option>
+                                    <option value="Kajiado">Kajiado</option>
+                                    <option value="Kakamega">Kakamega</option>
+                                    <option value="Kericho">Kericho</option>
+                                    <option value="Kiambu">Kiambu</option>
+                                    <option value="Kilifi">Kilifi</option>
+                                    <option value="Kirinyaga">Kirinyaga</option>
+                                    <option value="Kisii">Kisii</option>
+                                    <option value="Kisumu">Kisumu</option>
+                                    <option value="Kitui">Kitui</option>
+                                    <option value="Kwale">Kwale</option>
+                                    <option value="Laikipia">Laikipia</option>
+                                    <option value="Lamu">Lamu</option>
+                                    <option value="Machakos">Machakos</option>
+                                    <option value="Makueni">Makueni</option>
+                                    <option value="Mandera">Mandera</option>
+                                    <option value="Marsabit">Marsabit</option>
+                                    <option value="Meru">Meru</option>
+                                    <option value="Migori">Migori</option>
+                                    <option value="Mombasa">Mombasa</option>
+                                    <option value="Murang'a">Murang'a</option>
+                                    <option value="Nairobi">Nairobi</option>
+                                    <option value="Nakuru">Nakuru</option>
+                                    <option value="Nandi">Nandi</option>
+                                    <option value="Narok">Narok</option>
+                                    <option value="Nyamira">Nyamira</option>
+                                    <option value="Nyandarua">Nyandarua</option>
+                                    <option value="Nyeri">Nyeri</option>
+                                    <option value="Samburu">Samburu</option>
+                                    <option value="Siaya">Siaya</option>
+                                    <option value="Sibiloi">Sibiloi</option>
+                                    <option value="Taita-Taveta">Taita-Taveta</option>
+                                    <option value="Tana River">Tana River</option>
+                                    <option value="Tharaka-Nithi">Tharaka-Nithi</option>
+                                    <option value="Trans Nzoia">Trans Nzoia</option>
+                                    <option value="Turkana">Turkana</option>
+                                    <option value="Uasin Gishu">Uasin Gishu</option>
+                                    <option value="Vihiga">Vihiga</option>
+                                    <option value="Wajir">Wajir</option>
+                                    <option value="West Pokot">West Pokot</option>
+                                </select>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label class="form-label">Number of Units</label>
+                                <input type="number" id="editPropertyUnits" name="total_units" class="form-control">
+                            </div>
+                            
+                            <div class="col-12">
+                                <label class="form-label">Description / Internal Notes</label>
+                                <textarea id="editPropertyDescription" name="description" class="form-control"></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="modal-footer border-0 p-4 pt-2">
+                        <div class="row w-100 g-3">
+                            <div class="col-6">
+                                <button type="button" class="btn btn-outline-secondary w-100 py-2 rounded-3" data-bs-dismiss="modal">
+                                    Cancel
+                                </button>
+                            </div>
+                            <div class="col-6">
+                                <button type="submit" class="btn btn-primary-minimal w-100 py-2 rounded-3 shadow-sm">
+                                    Update Property
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+    const propertyCheckboxes = document.querySelectorAll('.property-checkbox');
+    const deleteSelectedBtn = document.getElementById('deleteSelectedBtn');
+    const editButtons = document.querySelectorAll('.editPropertyBtn');
+    const editPropertyForm = document.getElementById('editPropertyForm');
+    
+    // ======================
+    // EDIT PROPERTY FUNCTIONALITY
+    // ======================
+    editButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const propertyId = this.getAttribute('data-property-id');
+            
+            // Fetch property data
+            fetch(`/properties/edit/${propertyId}/`, {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Fill form fields
+                document.getElementById('editPropertyId').value = data.id;
+                document.getElementById('editPropertyName').value = data.name || '';
+                document.getElementById('editPropertyAddress').value = data.address || '';
+                document.getElementById('editPropertyCounty').value = data.county || '';
+                document.getElementById('editPropertyUnits').value = data.total_units || '';
+                document.getElementById('editPropertyDescription').value = data.description || '';
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Failed to load property details');
+            });
+        });
+    });
+    
+    // Handle edit form submission
+    if (editPropertyForm) {
+        editPropertyForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const propertyId = document.getElementById('editPropertyId').value;
+            const formData = new FormData(this);
+            
+            fetch(`/properties/edit/${propertyId}/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value || '',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(data.message);
+                    location.reload();
+                } else {
+                    alert(data.message || 'Failed to update property');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while updating the property');
+            });
+        });
+    }
+    
+    // ======================
+    // DELETE PROPERTIES FUNCTIONALITY
+    // ======================
+    
+    // Select/Deselect all
+    selectAllCheckbox.addEventListener('change', function() {
+        propertyCheckboxes.forEach(checkbox => {
+            checkbox.checked = this.checked;
+        });
+        updateDeleteButton();
+    });
+    
+    // Update delete button visibility
+    propertyCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', updateDeleteButton);
+    });
+    
+    function updateDeleteButton() {
+        const anySelected = Array.from(propertyCheckboxes).some(cb => cb.checked);
+        deleteSelectedBtn.style.display = anySelected ? 'inline-block' : 'none';
+    }
+    
+    // Delete selected properties
+    deleteSelectedBtn.addEventListener('click', function() {
+        const selectedIds = Array.from(propertyCheckboxes)
+            .filter(cb => cb.checked)
+            .map(cb => cb.value);
+        
+        if (selectedIds.length === 0) {
+            alert('Please select at least one property to delete');
+            return;
+        }
+        
+        if (confirm(`Are you sure you want to delete ${selectedIds.length} property/ies? This action cannot be undone.`)) {
+            const formData = new FormData();
+            selectedIds.forEach(id => formData.append('property_ids[]', id));
+            
+            fetch('{% url "properties:delete_properties" %}', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value || ''
+                },
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(data.message);
+                    location.reload();
+                } else {
+                    alert(data.message || 'Failed to delete properties');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while deleting properties');
+            });
+        }
+    });
+});
+</script>
+
 {% endblock %}

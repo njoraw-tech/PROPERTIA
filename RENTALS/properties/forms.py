@@ -6,9 +6,9 @@ class PropertyForm(forms.ModelForm):
         model = Property
         fields = ['name', 'address', 'county', 'total_units', 'description']
         widgets = {
-            'name': forms.TextInput(attrs={'placeholder': 'e.g. Riverside Apartments'}),
-            'address': forms.TextInput(attrs={'placeholder': '123 Street, City'}),
-            'county': forms.TextInput(attrs={'placeholder': 'Select County'}),
-            'total_units': forms.NumberInput(attrs={'placeholder': '0'}),
-            'description': forms.Textarea(attrs={'rows': 3, 'placeholder': 'Optional details...'}),
+            'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g. Riverside Apartments'}),
+            'address': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '123 Street, City'}),
+            'county': forms.Select(attrs={'class': 'form-control'}),
+            'total_units': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': '0'}),
+            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Optional details...'}),
         }

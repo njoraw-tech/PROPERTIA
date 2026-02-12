@@ -1,12 +1,20 @@
 from django import forms
 from .models import Tenant
+from properties.models import Property
 
 class TenantForm(forms.ModelForm):
+    # Add a property field that's not in the model
+    property = forms.ModelChoiceField(
+        queryset=Property.objects.all(),
+        widget=forms.Select(attrs={'class': 'form-select'}),
+        label='Property',
+        required=True
+    )
+    
     class Meta:
         model = Tenant
-        fields = ['unit', 'first_name', 'last_name', 'phone_number', 'next_of_kin_name', 'description', 'deposit_required', 'deposit_amount', 'next_of_kin_phone_number']
+        fields = ['first_name', 'last_name', 'phone_number', 'next_of_kin_name', 'description', 'deposit_required', 'deposit_amount', 'next_of_kin_phone_number']
         widgets = {
-            'unit': forms.Select(attrs={'class': 'form-select'}),
             'first_name': forms.TextInput(attrs={'class': 'form-control'}),
             'last_name': forms.TextInput(attrs={'class': 'form-control'}),
             'phone_number': forms.TextInput(attrs={'class': 'form-control'}),
