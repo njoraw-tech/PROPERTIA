@@ -22,5 +22,7 @@ app_name = 'tenants'  # Set the app name for namespacing
 
 urlpatterns = [
     # Point to a view function, NOT an include()
-    path('', views.tenant_list, name='tenant_list'), 
+    path('', views.tenant_list, name='tenant_list'),
+    path('delete/', views.delete_tenants, name='delete_tenants'),
+    path('upload/', views.upload_tenants, name='upload_tenants'),
 ]

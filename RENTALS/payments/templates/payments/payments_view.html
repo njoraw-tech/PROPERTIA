@@ -2,53 +2,92 @@
 {% load static %}
 
 
+{% block extra_js %}
+<script src="{% static 'js/payments.js' %}"></script>
+{% endblock %}
+
 {% block content %}
 <div class="container-fluid py-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h2 class="fw-bold mb-0">Payments</h2>
-            <p class="text-muted">Track your payments</p>
-        </div>
+        <h2>Payments</h2>
         <div class="d-flex gap-2">
-            <button class="btn btn-light border" data-bs-toggle="modal" data-bs-target="#uploadModal">Upload Payments</button>
-            <button class="btn btn-primary px-4" data-bs-toggle="modal" data-bs-target="#addPaymentModal">Add Payment</button>
+            <button type="button" id="deleteSelectedPaymentsBtn" class="btn btn-danger shadow-sm" style="display: none;">
+                <i class="bi bi-trash me-1"></i> DELETE SELECTED
+            </button>
+            <button class="btn btn-outline-dark" data-bs-toggle="modal" data-bs-target="#uploadModal">Upload Payments</button>
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addPaymentModal">+ Add Payment</button>
+        </div>
+    </div>
+
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-body">
+            <h5 class="mb-3">Filters</h5>
+            <form method="GET" class="row g-3">
+                <div class="col-md-4">
+                    <select name="property" class="form-select">
+                        <option value="">All Properties</option>
+                        {% for p in properties %}
+                        <option value="{{ p.id }}" {% if selected_property|stringformat:"s" == p.id|stringformat:"s" %}selected{% endif %}>{{ p.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <select name="status" class="form-select">
+                        <option value="" {% if not selected_status %}selected{% endif %}>All Status</option>
+                        <option value="claimed" {% if selected_status == "claimed" %}selected{% endif %}>Claimed</option>
+                        <option value="unclaimed" {% if selected_status == "unclaimed" %}selected{% endif %}>Unclaimed</option>
+                    </select>
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">FILTER</button>
+                </div>
+            </form>
         </div>
     </div>
 
     <div class="card shadow-sm border-0">
-        <div class="card-body p-4">
-            <h5 class="fw-bold mb-4">Payment List</h5>
-            
-            {% if payments %}
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle">
-                        <thead class="bg-light">
-                            <tr>
-                                <th>Date</th>
-                                <th>Property</th>
-                                <th>Tenant</th>
-                                <th>Amount</th>
-                                <th>Description</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for payment in payments %}
-                            <tr>
-                                <td>{{ payment.date }}</td>
-                                <td>{{ payment.property.name }}</td>
-                                <td>{{ payment.tenant.name }}</td>
-                                <td class="fw-bold">KES {{ payment.amount }}</td>
-                                <td class="text-muted small">{{ payment.description }}</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            {% else %}
-                <div class="text-center py-5">
-                    <p class="text-muted">No payments found. Record your first payment to get started.</p>
-                </div>
-            {% endif %}
+        <div class="card-header bg-white py-3">
+            <h5 class="mb-0">Payment List</h5>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="bg-light">
+                    <tr>
+                        <th class="ps-4">
+                            <input type="checkbox" id="selectAllPayments" class="form-check-input">
+                        </th>
+                        <th>Date</th>
+                        <th>Property</th>
+                        <th>Tenant</th>
+                        <th>Amount</th>
+                        <th>Description</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for payment in payments %}
+                    <tr>
+                        <td class="ps-4">
+                            <input type="checkbox" class="form-check-input payment-checkbox" value="{{ payment.id }}">
+                        </td>
+                        <td>{{ payment.date|date:"d/m/Y" }}</td>
+                        <td>{{ payment.property.name }}</td>
+                        <td>{{ payment.tenant.first_name }} {{ payment.tenant.last_name }}</td>
+                        <td class="fw-bold">KES {{ payment.amount }}</td>
+                        <td class="text-muted small">{{ payment.description|default:"-" }}</td>
+                        <td>
+                            <span class="badge {% if payment.status == 'claimed' %}bg-success-subtle text-success{% else %}bg-warning-subtle text-warning{% endif %} rounded-pill px-3">
+                                {{ payment.status }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center py-4 text-muted">No payments found matching your criteria.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
     </div>
 </div>
@@ -56,18 +95,39 @@
 <div class="modal fade" id="addPaymentModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content border-0 shadow-lg">
-            <div class="modal-header border-0 pb-0">
-                <h5 class="modal-title fw-bold">Add Payment</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            <div class="modal-header border-0">
+                <h5 class="modal-title fw-bold">Add New Payment</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <form method="post">
+            <form id="addPaymentForm" method="post" action="{% url 'payments:payment_list' %}">
                 {% csrf_token %}
-                <div class="modal-body p-4">
-                    <div class="mb-3">{{ form.property }}</div>
-                    <div class="mb-3">{{ form.tenant }}</div>
-                    <div class="mb-3">{{ form.amount }}</div>
-                    <div class="mb-3">{{ form.description }}</div>
-                    <div class="mb-3">{{ form.date }}</div>
+                <div id="paymentErrors" class="alert alert-danger mx-4 mt-3" style="display: none;"></div>
+                <div class="modal-body px-4">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Property</label>
+                        {{ form.property }}
+                        {% if form.property.errors %}<div class="text-danger small mt-1">{{ form.property.errors }}</div>{% endif %}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Tenant</label>
+                        {{ form.tenant }}
+                        {% if form.tenant.errors %}<div class="text-danger small mt-1">{{ form.tenant.errors }}</div>{% endif %}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Amount</label>
+                        {{ form.amount }}
+                        {% if form.amount.errors %}<div class="text-danger small mt-1">{{ form.amount.errors }}</div>{% endif %}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Description</label>
+                        {{ form.description }}
+                        {% if form.description.errors %}<div class="text-danger small mt-1">{{ form.description.errors }}</div>{% endif %}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Date</label>
+                        {{ form.date }}
+                        {% if form.date.errors %}<div class="text-danger small mt-1">{{ form.date.errors }}</div>{% endif %}
+                    </div>
                 </div>
                 <div class="modal-footer border-0 justify-content-end pb-4">
                     <button type="button" class="btn btn-light px-4" data-bs-dismiss="modal">Cancel</button>
@@ -79,23 +139,28 @@
 </div>
 
 <div class="modal fade" id="uploadModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 shadow-lg">
-            <div class="modal-header border-0 pb-0">
+            <div class="modal-header border-0">
                 <h5 class="modal-title fw-bold">Upload Payments</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body p-4">
-                <p class="text-muted small">Upload a CSV or XLSX file with headers: PROPERTY, TENANT name, AMOUNT, DESCRIPTION, PAYMENT_DATE</p>
-                <div class="input-group mb-3">
-                    <input type="file" class="form-control" id="inputGroupFile02">
+            <form id="uploadPaymentsForm" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="modal-body px-4">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">CSV or XLSX File</label>
+                        <input type="file" id="paymentsFile" name="file" class="form-control" accept=".csv,.xlsx" required>
+                        <small class="text-muted d-block mt-2"><strong>Required Headers:</strong> property, tenant, amount, date<br><strong>Optional Headers:</strong> description</small>
+                    </div>
                 </div>
-            </div>
-            <div class="modal-footer border-0 justify-content-end pb-4">
-                <button type="button" class="btn btn-light px-4" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary px-4 opacity-50" disabled>Preview Data</button>
-            </div>
+                <div class="modal-footer border-0 px-4 pb-4">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Upload</button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
+
 {% endblock %}

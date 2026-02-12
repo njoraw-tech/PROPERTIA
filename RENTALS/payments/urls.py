@@ -22,5 +22,7 @@ from .views import payment_list  # Import the specific view function
 app_name = 'payments'  # Set the app name for namespacing
 urlpatterns = [
     # Point to a view function, NOT an include()
-    path('', views.payment_list, name='payment_list'), 
+    path('', views.payment_list, name='payment_list'),
+    path('upload/', views.upload_payments, name='upload_payments'),
+    path('delete/', views.delete_payments, name='delete_payments'),
 ]

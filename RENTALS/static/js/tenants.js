@@ -2,77 +2,81 @@ document.addEventListener('DOMContentLoaded', function() {
     const selectAllBtn = document.getElementById('selectAllTenants');
     const deleteBtn = document.getElementById('deleteSelectedTenantsBtn');
 
-    // Helper to get CSRF token from the hidden input or cookie
-    function getCsrfToken() {
-        return document.querySelector('[name=csrfmiddlewaretoken]')?.value;
+    // 1. Correct way to get CSRF token in Django
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
     }
 
-    // 1. Handle "Select All"
+    // 2. Multi-select logic
     if (selectAllBtn) {
         selectAllBtn.addEventListener('change', function() {
-            // Re-query checkboxes in case the DOM updated
-            const tenantCheckboxes = document.querySelectorAll('.tenant-checkbox');
-            tenantCheckboxes.forEach(cb => {
-                cb.checked = this.checked;
-            });
+            const checkboxes = document.querySelectorAll('.tenant-checkbox');
+            checkboxes.forEach(cb => cb.checked = this.checked);
             toggleDeleteButton();
         });
     }
 
-    // 2. Individual Checkbox Change (using Event Delegation)
+    // 3. Individual checkbox logic (using delegation)
     document.addEventListener('change', function(e) {
         if (e.target.classList.contains('tenant-checkbox')) {
+            const allCheckboxes = document.querySelectorAll('.tenant-checkbox');
+            const checkedCheckboxes = document.querySelectorAll('.tenant-checkbox:checked');
+            
+            // Sync the "Select All" checkbox state
+            if (selectAllBtn) {
+                selectAllBtn.checked = allCheckboxes.length === checkedCheckboxes.length;
+            }
             toggleDeleteButton();
         }
     });
 
-    // 3. Show/Hide Delete Button
     function toggleDeleteButton() {
-        const checkedCount = document.querySelectorAll('.tenant-checkbox:checked').length;
+        const count = document.querySelectorAll('.tenant-checkbox:checked').length;
         if (deleteBtn) {
-            deleteBtn.style.display = checkedCount > 0 ? 'inline-block' : 'none';
+            deleteBtn.style.display = count > 0 ? 'inline-block' : 'none';
         }
     }
 
-    // 4. Delete Action
+    // 4. The Delete Fetch
     if (deleteBtn) {
         deleteBtn.addEventListener('click', function() {
             const selectedIds = Array.from(document.querySelectorAll('.tenant-checkbox:checked'))
-                .map(cb => cb.value);
+                                     .map(cb => cb.value);
 
-            if (selectedIds.length === 0) return;
+            if (!confirm(`Delete ${selectedIds.length} tenants?`)) return;
 
-            if (confirm(`Are you sure you want to delete ${selectedIds.length} tenant(s)? This will also vacate their units.`)) {
-                const formData = new FormData();
-                selectedIds.forEach(id => formData.append('tenant_ids[]', id));
+            const formData = new FormData();
+            selectedIds.forEach(id => formData.append('tenant_ids[]', id));
 
-                // If this is in a separate JS file, replace '{% url ... %}' with '/tenants/delete/'
-                const targetUrl = '{% url "tenants:delete_tenants" %}'; 
-
-                fetch(targetUrl, {
-                    method: 'POST',
-                    headers: {
-                        'X-CSRFToken': getCsrfToken(),
-                        'X-Requested-With': 'XMLHttpRequest'
-                    },
-                    body: formData
-                })
-                .then(response => {
-                    if (!response.ok) throw new Error('Network response was not ok');
-                    return response.json();
-                })
-                .then(data => {
-                    if (data.success) {
-                        location.reload();
-                    } else {
-                        alert(data.message || 'Error deleting tenants');
-                    }
-                })
-                .catch(err => {
-                    console.error('Error:', err);
-                    alert('Server error. Check if the URL is correct.');
-                });
-            }
+            // USE THE ABSOLUTE PATH matching your urls.py
+            fetch('/tenants/delete/', { 
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken'),
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: formData
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    window.location.reload();
+                } else {
+                    alert(data.message);
+                }
+            })
+            .catch(err => alert("Communication error with server. Check URL configuration."));
         });
     }
 });

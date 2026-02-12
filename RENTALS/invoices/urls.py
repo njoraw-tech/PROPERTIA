@@ -21,5 +21,7 @@ from . import views  # Import views from the current folder
 app_name = 'invoices'  # Set the app name for namespacing
 urlpatterns = [
     # Point to a view function, NOT an include()
-    path('', views.invoice_list, name='invoice_list'), 
+    path('', views.invoice_list, name='invoice_list'),
+    path('get-payments/', views.get_invoice_payments, name='get_payments'),
+    path('attach-payment/', views.attach_payment_to_invoice, name='attach_payment'),
 ]
