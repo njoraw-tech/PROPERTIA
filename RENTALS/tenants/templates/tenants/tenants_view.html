@@ -125,10 +125,10 @@
                         {% endif %}
                     </div>
                     <div class="mb-3">
-                        <label class="form-label fw-bold">Unit</label>
-                        {{ form.unit }}
-                        {% if form.unit.errors %}
-                            <div class="text-danger small mt-1">{{ form.unit.errors }}</div>
+                        <label class="form-label fw-bold">Property</label>
+                        {{ form.property }}
+                        {% if form.property.errors %}
+                            <div class="text-danger small mt-1">{{ form.property.errors }}</div>
                         {% endif %}
                     </div>
                     <div class="mb-3">
@@ -198,13 +198,15 @@
                     <div class="mb-3">
                         <label class="form-label fw-bold">CSV or XLSX File</label>
                         <input type="file" id="tenantsFile" name="file" class="form-control" accept=".csv,.xlsx" required>
-                        <small class="text-muted d-block mt-2"><strong>Required Headers:</strong> first_name, last_name, phone_number<br><strong>Optional Headers:</strong> next_of_kin_name, next_of_kin_phone_number, description, status, unit, deposit_required, deposit_amount</small>
+                        <small class="text-muted d-block mt-2"><strong>Required Headers:</strong> first_name, last_name, phone_number, property<br><strong>Optional Headers:</strong> next_of_kin_name, next_of_kin_phone_number, description, status, unit, deposit_required, deposit_amount</small>
                     </div>
                 </div>
                 <div class="modal-footer border-0 px-4 pb-4">
                     <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Upload</button>
+                    <button type="button" class="btn btn-secondary" id="validateTenantsBtn">Validate</button>
+                    <button type="submit" class="btn btn-primary" id="uploadTenantsBtn" style="display:none;">Upload</button>
                 </div>
+                <div id="tenantUploadValidation" class="mt-3" style="display:none;"></div>
             </form>
         </div>
     </div>
@@ -217,43 +219,44 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Handle Add Tenant Form
     if (addTenantForm) {
-        addTenantForm.addEventListener('submit', function(e) {
+        uploadBtn.addEventListener('click', function(e) {
             e.preventDefault();
-            
-            const formData = new FormData(this);
-            
-            fetch('{% url "tenants:tenant_list" %}', {
+            if (uploadBtn.style.display === 'none') return;
+            const fileInput = document.getElementById('tenantsFile');
+            const file = fileInput.files[0];
+            if (!file) {
+                alert('Please select a file');
+                return;
+            }
+            const validTypes = ['text/csv', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'];
+            if (!validTypes.includes(file.type) && !file.name.endsWith('.csv') && !file.name.endsWith('.xlsx')) {
+                alert('Please upload a CSV or XLSX file');
+                return;
+            }
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+            fetch('/tenants/upload/', {
                 method: 'POST',
                 headers: {
                     'X-Requested-With': 'XMLHttpRequest'
                 },
                 body: formData
             })
-            .then(response => response.text())
-            .then(html => {
-                // Check if response contains form errors
-                if (html.includes('errorlist') || html.includes('This field is required')) {
-                    // Display errors in modal
-                    const parser = new DOMParser();
-                    const doc = parser.parseFromString(html, 'text/html');
-                    const errorElements = doc.querySelectorAll('ul.errorlist');
-                    
-                    let errorHtml = '<ul>';
-                    errorElements.forEach(el => {
-                        const items = el.querySelectorAll('li');
-                        items.forEach(item => {
-                            errorHtml += '<li>' + item.textContent + '</li>';
-                        });
-                    });
-                    errorHtml += '</ul>';
-                    
-                    if (errorElements.length > 0) {
-                        document.getElementById('tenantErrors').innerHTML = errorHtml;
-                        document.getElementById('tenantErrors').style.display = 'block';
-                    } else {
-                        location.reload();
-                    }
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(`Successfully uploaded ${data.count} tenants`);
+                    location.reload();
                 } else {
+                    alert(data.message || 'Failed to upload tenants');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while uploading tenants');
+            });
+        });
                     // Success - reload page
                     location.reload();
                 }
@@ -266,28 +269,81 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     if (uploadForm) {
-        uploadForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            
+        // Validate button handler
+        const validateBtn = document.getElementById('validateTenantsBtn');
+        const validationDiv = document.getElementById('tenantUploadValidation');
+        const uploadBtn = document.getElementById('uploadTenantsBtn');
+        uploadBtn.style.display = 'none';
+        validateBtn.disabled = false;
+        validateBtn.addEventListener('click', function() {
             const fileInput = document.getElementById('tenantsFile');
             const file = fileInput.files[0];
-            
             if (!file) {
                 alert('Please select a file');
                 return;
             }
-            
-            // Validate file type
             const validTypes = ['text/csv', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'];
             if (!validTypes.includes(file.type) && !file.name.endsWith('.csv') && !file.name.endsWith('.xlsx')) {
                 alert('Please upload a CSV or XLSX file');
                 return;
             }
-            
             const formData = new FormData();
             formData.append('file', file);
             formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
-            
+            formData.append('validate_only', '1');
+            validationDiv.style.display = 'block';
+            validationDiv.innerHTML = 'Validating...';
+            uploadBtn.style.display = 'none';
+            fetch('/tenants/upload/', {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    let html = `<div class="alert alert-info">Validation complete.<br>Valid rows: <b>${data.valid_rows}</b><br>Invalid rows: <b>${data.invalid_rows}</b></div>`;
+                    if (data.errors && data.errors.length) {
+                        html += '<ul class="list-group">';
+                        data.errors.forEach(err => {
+                            html += `<li class="list-group-item list-group-item-danger">${err}</li>`;
+                        });
+                        html += '</ul>';
+                        uploadBtn.style.display = 'none';
+                    } else if (data.valid_rows > 0) {
+                        uploadBtn.style.display = 'inline-block';
+                    } else {
+                        uploadBtn.style.display = 'none';
+                    }
+                    validationDiv.innerHTML = html;
+                } else {
+                    validationDiv.innerHTML = `<div class="alert alert-danger">${data.message || 'Validation failed.'}</div>`;
+                    uploadBtn.style.display = 'none';
+                }
+            })
+            .catch(error => {
+                validationDiv.innerHTML = '<div class="alert alert-danger">Error validating file.</div>';
+            });
+        });
+        // Upload handler
+        uploadForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const fileInput = document.getElementById('tenantsFile');
+            const file = fileInput.files[0];
+            if (!file) {
+                alert('Please select a file');
+                return;
+            }
+            const validTypes = ['text/csv', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'];
+            if (!validTypes.includes(file.type) && !file.name.endsWith('.csv') && !file.name.endsWith('.xlsx')) {
+                alert('Please upload a CSV or XLSX file');
+                return;
+            }
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
             fetch('/tenants/upload/', {
                 method: 'POST',
                 headers: {

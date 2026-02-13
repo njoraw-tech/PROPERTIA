@@ -5,10 +5,8 @@
 {% endblock links %}
 
 {% block content %}
-<div class="container py-5">
-    <div class="row justify-content-center">
-        <div class="col-md-5">
-            <div class="card shadow-sm border-0 p-4">
+<div class="auth-center">
+    <div class="card shadow-sm border-0 p-4" style="min-width:340px;max-width:400px;width:100%;">
                 {% if messages %}
                 {% for message in messages %}
                     <div class="alert alert-{{ message.tags }} border-0 shadow-sm mb-4" style="border-radius: 12px; background-color: #f0fdf4; color: #166534;">

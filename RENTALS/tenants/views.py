@@ -61,120 +61,123 @@ def delete_tenants(request):
         return JsonResponse({'success': False, 'message': str(e)})
 
 
+
 @require_POST
 def upload_tenants(request):
-    """Upload tenants from CSV or XLSX file"""
+    """Upload tenants from CSV or XLSX file. If 'validate_only' POST param is set, only validate and return errors without creating tenants."""
     if 'file' not in request.FILES:
         return JsonResponse({'success': False, 'message': 'No file provided'})
-    
+
     file = request.FILES['file']
     filename = file.name.lower()
-    
+    validate_only = request.POST.get('validate_only') == '1'
+
     try:
         rows = []
-        
+
         if filename.endswith('.csv'):
-            # Handle CSV
             decoded_file = file.read().decode('utf-8').splitlines()
             reader = csv.DictReader(decoded_file)
             rows = list(reader)
         elif filename.endswith('.xlsx'):
-            # Handle XLSX
             try:
                 import openpyxl
                 from openpyxl import load_workbook
                 import io
-                
+
                 wb = load_workbook(io.BytesIO(file.read()))
                 ws = wb.active
-                
-                # Get headers from first row
+
                 headers = [cell.value for cell in ws[1]]
-                
-                # Convert rows to dictionaries
+
                 for row in ws.iter_rows(min_row=2, values_only=False):
                     row_dict = {}
                     for idx, header in enumerate(headers):
                         if header:
                             row_dict[header.lower().strip()] = row[idx].value
-                    if any(row_dict.values()):  # Only if row has data
+                    if any(row_dict.values()):
                         rows.append(row_dict)
             except ImportError:
                 return JsonResponse({'success': False, 'message': 'openpyxl is not installed. Please use CSV format or contact admin.'})
         else:
             return JsonResponse({'success': False, 'message': 'Invalid file format. Please use CSV or XLSX'})
-        
+
         if not rows:
             return JsonResponse({'success': False, 'message': 'File is empty'})
-        
-        # Validate and create tenants
+
         created_count = 0
         errors = []
-        
-        for idx, row in enumerate(rows, start=2):  # start=2 because row 1 is headers
+        valid_rows = 0
+        for idx, row in enumerate(rows, start=2):
             try:
-                # Normalize keys to lowercase
                 row_lower = {k.lower().strip(): v for k, v in row.items()}
-                
-                # Check required fields
+
                 first_name = row_lower.get('first_name')
                 last_name = row_lower.get('last_name')
                 phone_number = row_lower.get('phone_number')
-                
-                if not first_name or not last_name or not phone_number:
-                    errors.append(f'Row {idx}: Missing required fields (first_name, last_name, phone_number)')
+                property_name = row_lower.get('property')
+
+                if not first_name or not last_name or not phone_number or not property_name:
+                    errors.append(f'Row {idx}: Missing required fields (first_name, last_name, phone_number, property)')
                     continue
-                
-                # Get unit if provided
-                unit = None
-                unit_name = row_lower.get('unit')
-                if unit_name:
-                    try:
-                        unit = Unit.objects.get(name__iexact=unit_name)
-                    except Unit.DoesNotExist:
-                        errors.append(f'Row {idx}: Unit "{unit_name}" not found')
-                        continue
-                
-                # Parse boolean and decimal fields
+
+                # Get property object
+                try:
+                    property_obj = Property.objects.get(name__iexact=property_name)
+                except Property.DoesNotExist:
+                    errors.append(f'Row {idx}: Property "{property_name}" not found')
+                    continue
+
+                # Unit assignment is now handled by leases. Ignore unit and property fields for tenant upload.
+
                 deposit_required = True
                 if 'deposit_required' in row_lower:
                     deposit_req_val = str(row_lower.get('deposit_required', '')).lower().strip()
                     deposit_required = deposit_req_val in ['true', 'yes', '1', 't', 'y']
-                
+
                 deposit_amount = 0.00
                 if row_lower.get('deposit_amount'):
                     try:
                         deposit_amount = float(row_lower.get('deposit_amount', 0))
                     except ValueError:
                         deposit_amount = 0.00
-                
-                # Create tenant
-                tenant_data = {
-                    'first_name': first_name,
-                    'last_name': last_name,
-                    'phone_number': phone_number,
-                    'unit': unit,
-                    'next_of_kin_name': row_lower.get('next_of_kin_name', ''),
-                    'next_of_kin_phone_number': row_lower.get('next_of_kin_phone_number', ''),
-                    'description': row_lower.get('description', ''),
-                    'status': row_lower.get('status', 'active').lower(),
-                    'deposit_required': deposit_required,
-                    'deposit_amount': deposit_amount,
-                }
-                
-                Tenant.objects.create(**tenant_data)
-                created_count += 1
-                
+
+                if not validate_only:
+                    tenant_data = {
+                        'first_name': first_name,
+                        'last_name': last_name,
+                        'phone_number': phone_number,
+                        'property': property_obj,
+                        'next_of_kin_name': row_lower.get('next_of_kin_name', ''),
+                        'next_of_kin_phone_number': row_lower.get('next_of_kin_phone_number', ''),
+                        'description': row_lower.get('description', ''),
+                        'status': row_lower.get('status', 'active').lower(),
+                        'deposit_required': deposit_required,
+                        'deposit_amount': deposit_amount,
+                    }
+                    Tenant.objects.create(**tenant_data)
+                    created_count += 1
+                valid_rows += 1
+
             except ValueError as ve:
                 errors.append(f'Row {idx}: Invalid data format - {str(ve)}')
             except Exception as e:
                 errors.append(f'Row {idx}: {str(e)}')
-        
+
+        if validate_only:
+            return JsonResponse({
+                'success': True,
+                'valid_rows': valid_rows,
+                'invalid_rows': len(errors),
+                'errors': errors,
+                'message': f'Validation complete: {valid_rows} valid, {len(errors)} invalid.'
+            })
+
         message = f'Successfully created {created_count} tenants'
         if errors:
             message += f'. {len(errors)} errors: ' + '; '.join(errors[:3])
-        
-        return JsonResponse({'success': True, 'count': created_count, 'message': message})
-        
+
+        return JsonResponse({'success': True, 'count': created_count, 'message': message, 'errors': errors})
+
     except Exception as e:
         return JsonResponse({'success': False, 'message': f'Error processing file: {str(e)}'})

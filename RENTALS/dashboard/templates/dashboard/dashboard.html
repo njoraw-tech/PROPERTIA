@@ -121,12 +121,15 @@
                                             <i class="fas fa-building"></i>
                                         </div>
                                         <div class="property-details">
-                                            <h3 class="property-title">{{ property.property_name }}</h3>
+                                            <h3 class="property-title">{{ property.name }}</h3>
                                             <p class="property-address">
                                                 <i class="fas fa-map-marker-alt"></i> {{ property.location }}, {{ property.county }}
                                             </p>
                                             <div class="property-meta">
-                                                <div class="property-price">${{ property.rental_price|default:"N/A" }}/mo</div>
+                                                <div class="property-meta-occupancy">
+                                                    <span class="property-name">{{ property.name }}</span>
+                                                    <span class="property-occupancy">{{ property.occupied_units|default:"0" }}/{{ property.total_units|default:"0" }} units occupied</span>
+                                                </div>
                                                 <div class="property-status status-available">Active</div>
                                             </div>
                                         </div>

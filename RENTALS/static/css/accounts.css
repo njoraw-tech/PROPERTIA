@@ -17,6 +17,15 @@ body {
     font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
 }
 
+/* Full viewport flex centering for auth pages */
+.auth-center {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg-color);
+}
+
 /* Vertical & Horizontal Centering for Auth Pages */
 .container.py-5 {
     min-height: 85vh;
@@ -158,4 +167,21 @@ input:focus {
 
 .rounded-circle:hover {
     transform: scale(1.05);
+}
+
+/* Fix for flatpickr disappearing in card with border-0 and p-4 */
+.flatpickr-calendar {
+    z-index: 9999 !important;
+    box-shadow: 0 8px 32px rgba(60,60,100,0.18), 0 1.5px 4px rgba(60,60,100,0.10);
+    border-radius: 12px;
+    border: 1px solid #e0e0e0;
+}
+
+.flatpickr-calendar.open {
+    display: block !important;
+}
+
+input.datepicker[readonly] {
+    background-color: #fff !important;
+    cursor: pointer;
 }

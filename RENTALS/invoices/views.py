@@ -217,3 +217,149 @@ def attach_payment_to_invoice(request):
         return JsonResponse({'success': False, 'message': 'Payment not found'})
     except Exception as e:
         return JsonResponse({'success': False, 'message': f'Error: {str(e)}'})
+
+
+def get_attached_payments(request):
+    """Get all attached payments for an invoice"""
+    try:
+        invoice_id = request.GET.get('invoice_id')
+        
+        if not invoice_id:
+            return JsonResponse({'success': False, 'message': 'Invoice ID is required'})
+        
+        invoice = Invoice.objects.get(id=invoice_id)
+        attached_payments = InvoicePayment.objects.filter(invoice=invoice).select_related('payment')
+        
+        payments_list = []
+        for ip in attached_payments:
+            payments_list.append({
+                'invoice_payment_id': ip.id,
+                'amount': float(ip.payment.amount),
+                'amount_applied': float(ip.amount_applied),
+                'date': ip.payment.date.strftime('%Y-%m-%d'),
+                'description': ip.payment.description or ''
+            })
+        
+        return JsonResponse({
+            'success': True,
+            'attached_payments': payments_list
+        })
+    
+    except Invoice.DoesNotExist:
+        return JsonResponse({'success': False, 'message': 'Invoice not found'})
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': f'Error: {str(e)}'})
+
+
+def _check_user_permission(user):
+    """Check if user is admin or landlord"""
+    if user is None or not user.is_authenticated:
+        return False
+    try:
+        from accounts.models import Profile
+        profile = Profile.objects.get(user=user)
+        return profile.role in ['admin', 'landlord']
+    except:
+        return False
+
+
+@require_POST
+def update_invoice_payment(request):
+    """Update amount applied for an invoice payment"""
+    try:
+        # Check permission
+        if not _check_user_permission(request.user):
+            return JsonResponse({'success': False, 'message': 'Permission denied'}, status=403)
+        
+        invoice_payment_id = request.POST.get('invoice_payment_id')
+        new_amount = request.POST.get('amount_applied')
+        
+        if not invoice_payment_id or not new_amount:
+            return JsonResponse({'success': False, 'message': 'Missing required fields'})
+        
+        new_amount = Decimal(str(new_amount))
+        invoice_payment = InvoicePayment.objects.get(id=invoice_payment_id)
+        
+        # Calculate the difference
+        old_amount = invoice_payment.amount_applied
+        difference = new_amount - old_amount
+        
+        # Check if payment has enough balance
+        if difference > 0:
+            if invoice_payment.payment.balance < difference:
+                return JsonResponse({
+                    'success': False, 
+                    'message': f'Payment only has KES {invoice_payment.payment.balance} remaining'
+                })
+        
+        # Update invoice payment amount
+        invoice_payment.amount_applied = new_amount
+        invoice_payment.save()
+        
+        # Update payment balance
+        payment = invoice_payment.payment
+        payment.balance -= difference
+        
+        # Update status
+        if payment.balance <= 0:
+            payment.status = 'claimed'
+        else:
+            payment.status = 'unclaimed'
+        
+        payment.save()
+        
+        # Update invoice status
+        invoice = invoice_payment.invoice
+        invoice.update_status()
+        
+        return JsonResponse({
+            'success': True,
+            'message': 'Payment amount updated successfully'
+        })
+    
+    except InvoicePayment.DoesNotExist:
+        return JsonResponse({'success': False, 'message': 'Invoice payment not found'})
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': f'Error: {str(e)}'})
+
+
+@require_POST
+def remove_invoice_payment(request):
+    """Remove an invoice payment attachment"""
+    try:
+        # Check permission
+        if not _check_user_permission(request.user):
+            return JsonResponse({'success': False, 'message': 'Permission denied'}, status=403)
+        
+        invoice_payment_id = request.POST.get('invoice_payment_id')
+        
+        if not invoice_payment_id:
+            return JsonResponse({'success': False, 'message': 'Invoice payment ID is required'})
+        
+        invoice_payment = InvoicePayment.objects.get(id=invoice_payment_id)
+        
+        # Get the amount before deletion
+        amount_applied = invoice_payment.amount_applied
+        payment = invoice_payment.payment
+        invoice = invoice_payment.invoice
+        
+        # Delete the attachment
+        invoice_payment.delete()
+        
+        # Restore payment balance
+        payment.balance += amount_applied
+        payment.status = 'unclaimed'
+        payment.save()
+        
+        # Update invoice status
+        invoice.update_status()
+        
+        return JsonResponse({
+            'success': True,
+            'message': 'Payment removed successfully'
+        })
+    
+    except InvoicePayment.DoesNotExist:
+        return JsonResponse({'success': False, 'message': 'Invoice payment not found'})
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': f'Error: {str(e)}'})

@@ -62,7 +62,9 @@
                         </td>
                         <td>
                             <button class="btn btn-primary btn-sm rounded attachPaymentBtn" data-invoice-id="{{ inv.id }}" data-bs-toggle="modal" data-bs-target="#attachPaymentModal">Attach Payment</button>
-                            <button class="btn btn-sm btn-light border"><i class="bi bi-pencil"></i></button>
+                            {% if user.profile.role == 'admin' or user.profile.role == 'landlord' %}
+                                <button class="btn btn-sm btn-light border editPaymentsBtn" data-invoice-id="{{ inv.id }}" data-bs-toggle="modal" data-bs-target="#editPaymentsModal" title="Edit Attached Payments"><i class="bi bi-pencil"></i></button>
+                            {% endif %}
                         </td>
                     </tr>
                     {% endfor %}
@@ -90,7 +92,7 @@
                         </select>
                     </div>
                     <div class="mb-3">
-                        <input type="date" name="due_date" class="form-control bg-light border-0">
+                        <input type="text" name="due_date" class="form-control bg-light border-0 datepicker">
                     </div>
                     <div class="mb-3">
                         <select name="type" class="form-select bg-light border-0">
@@ -128,7 +130,7 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Due Date</label>
-                        <input type="date" name="due_date" class="form-control bg-light border-0" required>
+                        <input type="text" name="due_date" class="form-control bg-light border-0 datepicker" required>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Invoice Type</label>
@@ -193,10 +195,10 @@
                 </div>
 
                 <div class="mb-3">
-                    <label class="form-label fw-bold">Amount to Apply</label>
+                    <label class="form-label fw-bold">Amount Remaining</label>
                     <div class="alert alert-success mb-0">
-                        <div class="fw-bold"><span id="amountToApplyDisplay">0.00</span> KES</div>
-                        <small id="amountToApplyHint" class="text-muted"></small>
+                        <div class="fw-bold"><span id="amountRemainingDisplay">0.00</span> KES</div>
+                        <small id="amountRemainingHint" class="text-muted">Total Invoice Amount minus Partial Payments Already Attached</small>
                     </div>
                 </div>
 
@@ -205,6 +207,64 @@
             <div class="modal-footer border-0">
                 <button type="button" class="btn btn-light px-4" data-bs-dismiss="modal">Cancel</button>
                 <button type="button" class="btn btn-primary px-4" id="attachPaymentBtn">Attach Payment</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Invoice Payments Modal -->
+<div class="modal fade" id="editPaymentsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header border-0">
+                <h5 class="modal-title fw-bold">Edit Invoice Payments</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body px-4">
+                <div class="mb-3" id="editInvoiceDetails">
+                    <h6 class="fw-bold mb-3">Invoice Details</h6>
+                    <div class="row g-2 small mb-4">
+                        <div class="col-6">
+                            <div class="text-muted">Invoice #</div>
+                            <div id="editInvoiceNumber" class="fw-bold">-</div>
+                        </div>
+                        <div class="col-6">
+                            <div class="text-muted">Total Amount</div>
+                            <div id="editInvoiceAmount" class="fw-bold">KES 0</div>
+                        </div>
+                        <div class="col-6">
+                            <div class="text-muted">Amount Paid</div>
+                            <div id="editAmountPaid" class="fw-bold text-success">KES 0</div>
+                        </div>
+                        <div class="col-6">
+                            <div class="text-muted">Amount Due</div>
+                            <div id="editAmountDue" class="fw-bold text-danger">KES 0</div>
+                        </div>
+                    </div>
+                </div>
+
+                <h6 class="fw-bold mb-3">Attached Payments</h6>
+                <div id="editPaymentsError" class="alert alert-danger" style="display: none;"></div>
+                <div id="editPaymentsSuccess" class="alert alert-success" style="display: none;"></div>
+                
+                <div id="attachedPaymentsContainer" class="table-responsive">
+                    <table class="table table-sm table-hover mb-0">
+                        <thead class="bg-light">
+                            <tr>
+                                <th>Payment Amount</th>
+                                <th>Amount Applied</th>
+                                <th>Payment Date</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="attachedPaymentsList">
+                            <tr><td colspan="4" class="text-center text-muted">Loading...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-light px-4" data-bs-dismiss="modal">Close</button>
             </div>
         </div>
     </div>
@@ -237,6 +297,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     document.getElementById('amountPaid').textContent = `KES ${data.amount_paid}`;
                     document.getElementById('amountDue').textContent = `KES ${data.remaining_balance}`;
 
+                    // Display Amount Remaining (total minus paid)
+                    document.getElementById('amountRemainingDisplay').textContent = data.remaining_balance.toFixed(2);
+                    document.getElementById('amountRemainingHint').textContent = `Total: KES ${data.invoice_amount.toFixed(2)} - Paid: KES ${data.amount_paid.toFixed(2)} = Remaining: KES ${data.remaining_balance.toFixed(2)}`;
+
                     // Clear and populate payment select
                     paymentSelect.innerHTML = '<option value="">-- Select a payment --</option>';
                     data.payments.forEach(payment => {
@@ -250,7 +314,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
                     // Reset form
                     paymentSelect.value = '';
-                    document.getElementById('amountToApplyDisplay').textContent = '0.00';
                     attachError.style.display = 'none';
                 } else {
                     attachError.textContent = data.message;
@@ -263,27 +326,17 @@ document.addEventListener('DOMContentLoaded', function() {
             });
     }
 
-    // Update amount to apply when payment is selected
+    // Update Payment Details when payment is selected
     paymentSelect.addEventListener('change', function() {
         if (this.value) {
             const selectedOption = this.options[this.selectedIndex];
             const paymentBalance = parseFloat(selectedOption.dataset.balance);
             const paymentAmount = parseFloat(selectedOption.dataset.amount);
-            const invoiceDue = parseFloat(document.getElementById('amountDue').textContent.replace('KES ', ''));
-            
-            // Amount to apply is the minimum of payment balance and invoice due
-            const amountToApply = Math.min(paymentBalance, invoiceDue);
             
             // Show payment details
             document.getElementById('paymentRemaining').innerHTML = `<strong>Remaining on this payment: KES ${paymentBalance.toFixed(2)}</strong><br><small>Total payment: KES ${paymentAmount.toFixed(2)}</small>`;
-            
-            // Show amount to apply
-            document.getElementById('amountToApplyDisplay').textContent = amountToApply.toFixed(2);
-            document.getElementById('amountToApplyHint').textContent = `This is the minimum of payment remaining (KES ${paymentBalance.toFixed(2)}) and invoice due (KES ${invoiceDue.toFixed(2)})`;
         } else {
             document.getElementById('paymentRemaining').innerHTML = 'Select a payment to see available balance';
-            document.getElementById('amountToApplyDisplay').textContent = '0.00';
-            document.getElementById('amountToApplyHint').textContent = '';
         }
     });
 
@@ -298,6 +351,8 @@ document.addEventListener('DOMContentLoaded', function() {
         const selectedOption = paymentSelect.options[paymentSelect.selectedIndex];
         const paymentBalance = parseFloat(selectedOption.dataset.balance);
         const invoiceDue = parseFloat(document.getElementById('amountDue').textContent.replace('KES ', ''));
+        
+        // Amount to apply is minimum of payment balance and invoice due
         const amountToApply = Math.min(paymentBalance, invoiceDue);
 
         const formData = new FormData();
@@ -328,6 +383,175 @@ document.addEventListener('DOMContentLoaded', function() {
             attachError.style.display = 'block';
         });
     });
+
+    // Edit Payments Modal functionality
+    const editButtons = document.querySelectorAll('.editPaymentsBtn');
+    let currentEditInvoiceId = null;
+
+    editButtons.forEach(btn => {
+        btn.addEventListener('click', function() {
+            currentEditInvoiceId = this.getAttribute('data-invoice-id');
+            loadEditPayments(currentEditInvoiceId);
+        });
+    });
+
+    function loadEditPayments(invoiceId) {
+        fetch(`/invoices/get-payments/?invoice_id=${invoiceId}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Update invoice details
+                    document.getElementById('editInvoiceNumber').textContent = data.invoice_number;
+                    document.getElementById('editInvoiceAmount').textContent = `KES ${data.invoice_amount}`;
+                    document.getElementById('editAmountPaid').textContent = `KES ${data.amount_paid}`;
+                    document.getElementById('editAmountDue').textContent = `KES ${data.remaining_balance}`;
+
+                    // Load attached payments
+                    loadAttachedPayments(invoiceId);
+                } else {
+                    document.getElementById('editPaymentsError').textContent = data.message;
+                    document.getElementById('editPaymentsError').style.display = 'block';
+                }
+            })
+            .catch(error => {
+                document.getElementById('editPaymentsError').textContent = 'Error loading invoice details';
+                document.getElementById('editPaymentsError').style.display = 'block';
+            });
+    }
+
+    function loadAttachedPayments(invoiceId) {
+        fetch(`/invoices/get-attached-payments/?invoice_id=${invoiceId}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const tbody = document.getElementById('attachedPaymentsList');
+                    tbody.innerHTML = '';
+
+                    if (data.attached_payments.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">No payments attached to this invoice</td></tr>';
+                    } else {
+                        data.attached_payments.forEach(payment => {
+                            const row = document.createElement('tr');
+                            row.innerHTML = `
+                                <td class="fw-bold">KES ${payment.amount}</td>
+                                <td>KES ${payment.amount_applied}</td>
+                                <td>${payment.date}</td>
+                                <td>
+                                    <button class="btn btn-sm btn-warning editAmountBtn" data-invoice-payment-id="${payment.invoice_payment_id}" data-amount-applied="${payment.amount_applied}" data-max-amount="${payment.amount}">Edit</button>
+                                    <button class="btn btn-sm btn-danger removePaymentBtn" data-invoice-payment-id="${payment.invoice_payment_id}" data-amount-applied="${payment.amount_applied}">Remove</button>
+                                </td>
+                            `;
+                            tbody.appendChild(row);
+                        });
+
+                        // Attach event listeners to edit and remove buttons
+                        document.querySelectorAll('.editAmountBtn').forEach(btn => {
+                            btn.addEventListener('click', editPaymentAmount);
+                        });
+
+                        document.querySelectorAll('.removePaymentBtn').forEach(btn => {
+                            btn.addEventListener('click', removePayment);
+                        });
+                    }
+                    
+                    document.getElementById('editPaymentsError').style.display = 'none';
+                } else {
+                    document.getElementById('editPaymentsError').textContent = data.message;
+                    document.getElementById('editPaymentsError').style.display = 'block';
+                }
+            })
+            .catch(error => {
+                document.getElementById('editPaymentsError').textContent = 'Error loading attached payments';
+                document.getElementById('editPaymentsError').style.display = 'block';
+            });
+    }
+
+    function editPaymentAmount(e) {
+        const btn = e.target.closest('.editAmountBtn');
+        const invoicePaymentId = btn.getAttribute('data-invoice-payment-id');
+        const currentAmount = parseFloat(btn.getAttribute('data-amount-applied'));
+        const maxAmount = parseFloat(btn.getAttribute('data-max-amount'));
+
+        const newAmount = prompt(`Enter new amount (max KES ${maxAmount.toFixed(2)}):`, currentAmount.toFixed(2));
+        
+        if (newAmount === null) return;
+
+        const amount = parseFloat(newAmount);
+        if (isNaN(amount) || amount < 0 || amount > maxAmount) {
+            alert(`Amount must be between 0 and ${maxAmount.toFixed(2)}`);
+            return;
+        }
+
+        updatePaymentAmount(invoicePaymentId, amount, currentEditInvoiceId);
+    }
+
+    function removePayment(e) {
+        if (!confirm('Are you sure you want to remove this payment?')) return;
+
+        const btn = e.target.closest('.removePaymentBtn');
+        const invoicePaymentId = btn.getAttribute('data-invoice-payment-id');
+        
+        removePaymentAttachment(invoicePaymentId, currentEditInvoiceId);
+    }
+
+    function updatePaymentAmount(invoicePaymentId, newAmount, invoiceId) {
+        const formData = new FormData();
+        formData.append('invoice_payment_id', invoicePaymentId);
+        formData.append('amount_applied', newAmount);
+        formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+
+        fetch('/invoices/update-invoice-payment/', {
+            method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                document.getElementById('editPaymentsSuccess').textContent = data.message;
+                document.getElementById('editPaymentsSuccess').style.display = 'block';
+                loadEditPayments(invoiceId);
+            } else {
+                document.getElementById('editPaymentsError').textContent = data.message;
+                document.getElementById('editPaymentsError').style.display = 'block';
+            }
+        })
+        .catch(error => {
+            document.getElementById('editPaymentsError').textContent = 'Error updating payment';
+            document.getElementById('editPaymentsError').style.display = 'block';
+        });
+    }
+
+    function removePaymentAttachment(invoicePaymentId, invoiceId) {
+        const formData = new FormData();
+        formData.append('invoice_payment_id', invoicePaymentId);
+        formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+
+        fetch('/invoices/remove-invoice-payment/', {
+            method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                document.getElementById('editPaymentsSuccess').textContent = data.message;
+                document.getElementById('editPaymentsSuccess').style.display = 'block';
+                loadEditPayments(invoiceId);
+            } else {
+                document.getElementById('editPaymentsError').textContent = data.message;
+                document.getElementById('editPaymentsError').style.display = 'block';
+            }
+        })
+        .catch(error => {
+            document.getElementById('editPaymentsError').textContent = 'Error removing payment';
+            document.getElementById('editPaymentsError').style.display = 'block';
+        });
+    }
 });
 </script>
 {% endblock %}

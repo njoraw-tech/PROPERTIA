@@ -58,29 +58,42 @@ def units_list(request):
 def assign_tenant(request, pk):
     """Assign a tenant to a unit"""
     unit = get_object_or_404(Unit, pk=pk)
-    
+
     if request.method == 'POST':
         tenant_id = request.POST.get('tenant_id')
-        
+        start_date = request.POST.get('start_date')
+        deposit_held = request.POST.get('deposit_held', 0)
         if tenant_id:
             try:
+                from leases.models import Lease
                 tenant = Tenant.objects.get(id=tenant_id)
-                # Update tenant's unit assignment
-                tenant.unit = unit
-                tenant.save()
-                
+                # Check for existing active lease
+                if Lease.objects.filter(unit=unit, is_active=True).exists():
+                    return JsonResponse({'success': False, 'message': f'Unit {unit.name} already has an active lease.'}, status=400)
+                # Create lease
+                lease = Lease.objects.create(
+                    tenant=tenant,
+                    unit=unit,
+                    start_date=start_date or timezone.now().date(),
+                    monthly_rent=unit.rent_amount,
+                    deposit_held=deposit_held,
+                    is_active=True
+                )
+                # Lease creation will handle unit status and tenant activation
                 if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                    return JsonResponse({'success': True, 'message': f'Tenant {tenant.first_name} {tenant.last_name} assigned to {unit.name}'})
+                    return JsonResponse({'success': True, 'message': f'Lease created: {tenant.first_name} {tenant.last_name} assigned to {unit.name}'})
                 else:
                     return redirect('units:units_list')
             except Tenant.DoesNotExist:
                 return JsonResponse({'success': False, 'message': 'Tenant not found'}, status=400)
+            except Exception as e:
+                return JsonResponse({'success': False, 'message': str(e)}, status=400)
         else:
             return JsonResponse({'success': False, 'message': 'Please select a tenant'}, status=400)
-    
+
     # Return available tenants for modal
     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-        tenants = Tenant.objects.filter(unit__isnull=True)
+        tenants = Tenant.objects.filter(~models.Exists('leases'), leases__is_active=False)
         return JsonResponse({
             'unit_id': unit.id,
             'unit_name': unit.name,
