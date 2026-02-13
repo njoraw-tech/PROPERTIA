@@ -14,8 +14,22 @@ def index(request):
     total_units = Property.objects.aggregate(total_units=Count('id'))['total_units']
     maintenance_requests = 0  # No maintenance model created yet
     
-    # Get recent properties (last 5)
-    recent_properties = Property.objects.all()[:5]
+    # Get recent properties (last 5) and annotate with occupancy
+    recent_properties_qs = Property.objects.all()[:5]
+    recent_properties = []
+    for prop in recent_properties_qs:
+        occupied_units = prop.units.filter(status='occupied').count() if hasattr(prop, 'units') else 0
+        total_units = prop.units.count() if hasattr(prop, 'units') else prop.total_units
+        recent_properties.append({
+            'id': prop.id,
+            'name': prop.name,
+            'address': prop.address,
+            'county': prop.county,
+            'total_units': total_units,
+            'occupied_units': occupied_units,
+            'description': prop.description,
+            'property_image': prop.property_image.url if prop.property_image else '',
+        })
     
     # Get recent tenants (last 4)
     recent_tenants = Tenant.objects.all()[:4]

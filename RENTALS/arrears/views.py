@@ -33,6 +33,7 @@ def arrears_report(request):
     for tenant in tenants:
         total_invoiced = Invoice.objects.filter(tenant=tenant).aggregate(Sum('amount'))['amount__sum'] or 0
         total_paid = Payment.objects.filter(tenant=tenant).aggregate(Sum('amount'))['amount__sum'] or 0
+        total_payment_balance = Payment.objects.filter(tenant=tenant).aggregate(Sum('balance'))['balance__sum'] or 0
         balance = total_invoiced - total_paid
 
         # Only show in report if there is a balance (Arrears)
@@ -47,6 +48,7 @@ def arrears_report(request):
                 'invoice_amount': total_invoiced,
                 'total_paid': total_paid,
                 'balance': balance,
+                'payment_remaining': total_payment_balance,
                 'due_date': latest_inv.due_date if latest_inv else "N/A",
             })
 

@@ -14,7 +14,7 @@
             <button type="button" id="deleteSelectedTenantsBtn" class="btn btn-danger shadow-sm" style="display: none;">
                 <i class="bi bi-trash me-1"></i> DELETE SELECTED
             </button>
-            <button class="btn btn-outline-dark">Upload Tenants</button>
+            <button class="btn btn-outline-dark" data-bs-toggle="modal" data-bs-target="#uploadTenantsModal">Upload Tenants</button>
             <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addTenantModal">+ Add Tenant</button>
         </div>
     </div>
@@ -91,5 +91,282 @@
         </div>
     </div>
 </div>
+
+<div class="modal fade" id="addTenantModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header border-0">
+                <h5 class="modal-title fw-bold">Add New Tenant</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="addTenantForm" method="post" action="{% url 'tenants:tenant_list' %}">
+                {% csrf_token %}
+                <div id="tenantErrors" class="alert alert-danger mx-4 mt-3" style="display: none;"></div>
+                <div class="modal-body px-4">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">First Name</label>
+                        {{ form.first_name }}
+                        {% if form.first_name.errors %}
+                            <div class="text-danger small mt-1">{{ form.first_name.errors }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Last Name</label>
+                        {{ form.last_name }}
+                        {% if form.last_name.errors %}
+                            <div class="text-danger small mt-1">{{ form.last_name.errors }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Phone Number</label>
+                        {{ form.phone_number }}
+                        {% if form.phone_number.errors %}
+                            <div class="text-danger small mt-1">{{ form.phone_number.errors }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Property</label>
+                        {{ form.property }}
+                        {% if form.property.errors %}
+                            <div class="text-danger small mt-1">{{ form.property.errors }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Next of Kin Name</label>
+                        {{ form.next_of_kin_name }}
+                        {% if form.next_of_kin_name.errors %}
+                            <div class="text-danger small mt-1">{{ form.next_of_kin_name.errors }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Next of Kin Phone</label>
+                        {{ form.next_of_kin_phone_number }}
+                        {% if form.next_of_kin_phone_number.errors %}
+                            <div class="text-danger small mt-1">{{ form.next_of_kin_phone_number.errors }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Description</label>
+                        {{ form.description }}
+                        {% if form.description.errors %}
+                            <div class="text-danger small mt-1">{{ form.description.errors }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Status</label>
+                        {{ form.status }}
+                        {% if form.status.errors %}
+                            <div class="text-danger small mt-1">{{ form.status.errors }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Deposit Required</label>
+                        <div class="form-check">
+                            {{ form.deposit_required }}
+                            {% if form.deposit_required.errors %}
+                                <div class="text-danger small mt-1">{{ form.deposit_required.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Deposit Amount</label>
+                        {{ form.deposit_amount }}
+                        {% if form.deposit_amount.errors %}
+                            <div class="text-danger small mt-1">{{ form.deposit_amount.errors }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="modal-footer border-0 px-4 pb-4">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Add Tenant</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="uploadTenantsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header border-0">
+                <h5 class="modal-title fw-bold">Upload Tenants</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="uploadTenantsForm" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="modal-body px-4">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">CSV or XLSX File</label>
+                        <input type="file" id="tenantsFile" name="file" class="form-control" accept=".csv,.xlsx" required>
+                        <small class="text-muted d-block mt-2"><strong>Required Headers:</strong> first_name, last_name, phone_number, property<br><strong>Optional Headers:</strong> next_of_kin_name, next_of_kin_phone_number, description, status, unit, deposit_required, deposit_amount</small>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 px-4 pb-4">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-secondary" id="validateTenantsBtn">Validate</button>
+                    <button type="submit" class="btn btn-primary" id="uploadTenantsBtn" style="display:none;">Upload</button>
+                </div>
+                <div id="tenantUploadValidation" class="mt-3" style="display:none;"></div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const uploadForm = document.getElementById('uploadTenantsForm');
+    const addTenantForm = document.getElementById('addTenantForm');
+    
+    // Handle Add Tenant Form
+    if (addTenantForm) {
+        uploadBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            if (uploadBtn.style.display === 'none') return;
+            const fileInput = document.getElementById('tenantsFile');
+            const file = fileInput.files[0];
+            if (!file) {
+                alert('Please select a file');
+                return;
+            }
+            const validTypes = ['text/csv', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'];
+            if (!validTypes.includes(file.type) && !file.name.endsWith('.csv') && !file.name.endsWith('.xlsx')) {
+                alert('Please upload a CSV or XLSX file');
+                return;
+            }
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+            fetch('/tenants/upload/', {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(`Successfully uploaded ${data.count} tenants`);
+                    location.reload();
+                } else {
+                    alert(data.message || 'Failed to upload tenants');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while uploading tenants');
+            });
+        });
+                    // Success - reload page
+                    location.reload();
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred');
+            });
+        });
+    }
+    
+    if (uploadForm) {
+        // Validate button handler
+        const validateBtn = document.getElementById('validateTenantsBtn');
+        const validationDiv = document.getElementById('tenantUploadValidation');
+        const uploadBtn = document.getElementById('uploadTenantsBtn');
+        uploadBtn.style.display = 'none';
+        validateBtn.disabled = false;
+        validateBtn.addEventListener('click', function() {
+            const fileInput = document.getElementById('tenantsFile');
+            const file = fileInput.files[0];
+            if (!file) {
+                alert('Please select a file');
+                return;
+            }
+            const validTypes = ['text/csv', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'];
+            if (!validTypes.includes(file.type) && !file.name.endsWith('.csv') && !file.name.endsWith('.xlsx')) {
+                alert('Please upload a CSV or XLSX file');
+                return;
+            }
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+            formData.append('validate_only', '1');
+            validationDiv.style.display = 'block';
+            validationDiv.innerHTML = 'Validating...';
+            uploadBtn.style.display = 'none';
+            fetch('/tenants/upload/', {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    let html = `<div class="alert alert-info">Validation complete.<br>Valid rows: <b>${data.valid_rows}</b><br>Invalid rows: <b>${data.invalid_rows}</b></div>`;
+                    if (data.errors && data.errors.length) {
+                        html += '<ul class="list-group">';
+                        data.errors.forEach(err => {
+                            html += `<li class="list-group-item list-group-item-danger">${err}</li>`;
+                        });
+                        html += '</ul>';
+                        uploadBtn.style.display = 'none';
+                    } else if (data.valid_rows > 0) {
+                        uploadBtn.style.display = 'inline-block';
+                    } else {
+                        uploadBtn.style.display = 'none';
+                    }
+                    validationDiv.innerHTML = html;
+                } else {
+                    validationDiv.innerHTML = `<div class="alert alert-danger">${data.message || 'Validation failed.'}</div>`;
+                    uploadBtn.style.display = 'none';
+                }
+            })
+            .catch(error => {
+                validationDiv.innerHTML = '<div class="alert alert-danger">Error validating file.</div>';
+            });
+        });
+        // Upload handler
+        uploadForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const fileInput = document.getElementById('tenantsFile');
+            const file = fileInput.files[0];
+            if (!file) {
+                alert('Please select a file');
+                return;
+            }
+            const validTypes = ['text/csv', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'];
+            if (!validTypes.includes(file.type) && !file.name.endsWith('.csv') && !file.name.endsWith('.xlsx')) {
+                alert('Please upload a CSV or XLSX file');
+                return;
+            }
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+            fetch('/tenants/upload/', {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(`Successfully uploaded ${data.count} tenants`);
+                    location.reload();
+                } else {
+                    alert(data.message || 'Failed to upload tenants');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while uploading tenants');
+            });
+        });
+    }
+});
+</script>
 
 {% endblock %}

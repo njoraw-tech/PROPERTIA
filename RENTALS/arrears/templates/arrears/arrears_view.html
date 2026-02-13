@@ -53,6 +53,7 @@
                         <th>Invoice Type</th>
                         <th>Invoice Amount</th>
                         <th>Total Paid</th>
+                        <th>Payment Remaining</th>
                         <th>Balance</th>
                         <th>Due Date</th>
                     </tr>
@@ -60,7 +61,7 @@
                 <tbody>
                     {% for item in report_data %}
                     <tr>
-                        <td class="ps-4 fw-bold">{{ item.tenant.name }}</td>
+                        <td class="ps-4 fw-bold">{{ item.tenant.first_name }} {{ item.tenant.last_name }}</td>
                         <td>{{ item.tenant.phone_number }}</td>
                         <td>{{ item.tenant.unit.property.name }}</td>
                         <td>{{ item.tenant.unit.name }}</td>
@@ -68,12 +69,13 @@
                         <td>{{ item.invoice_type }}</td>
                         <td>{{ item.invoice_amount|floatformat:2 }}</td>
                         <td>{{ item.total_paid|floatformat:2 }}</td>
+                        <td class="fw-bold text-info">{{ item.payment_remaining|floatformat:2 }}</td>
                         <td class="fw-bold text-danger">{{ item.balance|floatformat:2 }}</td>
                         <td>{{ item.due_date }}</td>
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="10" class="text-center py-5 text-muted">No outstanding arrears found for the selected filters.</td>
+                        <td colspan="11" class="text-center py-5 text-muted">No outstanding arrears found for the selected filters.</td>
                     </tr>
                     {% endfor %}
                 </tbody>

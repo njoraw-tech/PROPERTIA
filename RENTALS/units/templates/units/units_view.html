@@ -14,7 +14,7 @@
             <button type="button" id="deleteSelectedBtn" class="btn btn-danger" style="display: none;">
                 <i class="fas fa-trash me-1"></i> DELETE SELECTED
             </button>
-            <button class="btn btn-outline-secondary"><i class="bi bi-upload"></i> UPLOAD UNITS</button>
+            <button class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#uploadUnitsModal"><i class="bi bi-upload"></i> UPLOAD UNITS</button>
             <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addUnitModal">+ ADD UNIT</button>
         </div>
     </div>
@@ -66,11 +66,19 @@
                         <td>{{ unit.property.name }}</td>
                         <td>{{ unit.rent_amount }}</td>
                         <td>
-                            <span class="badge {% if unit.status == 'occupied' %}bg-success text-white{% else %}bg-warning-subtle text-warning{% endif %}">
-                                {{ unit.status }}
-                            </span>
+                            {% if unit.get_assigned_tenant %}
+                                <span class="badge bg-success text-white">occupied</span>
+                            {% else %}
+                                <span class="badge bg-warning-subtle text-warning">vacant</span>
+                            {% endif %}
                         </td>
-                        <td>{{ unit.tenant_name|default:"---" }}</td>
+                        <td>
+                            {% if unit.get_assigned_tenant %}
+                                {{ unit.get_tenant_display_name }}
+                            {% else %}
+                                <span class="text-muted">---</span>
+                            {% endif %}
+                        </td>
                         <td class="text-end pe-4">
                             {% if unit.status == 'occupied' %}
                                 <button class="btn btn-sm btn-light border detachTenantBtn" data-unit-id="{{ unit.id }}" data-unit-name="{{ unit.name }}"><i class="bi bi-person"></i> Detach</button>
@@ -95,8 +103,9 @@
                 <h5 class="modal-title fw-bold">Add New Unit</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <form method="post">
+            <form id="addUnitForm" method="post">
                 {% csrf_token %}
+                <div id="unitErrors" class="alert alert-danger mx-4 mt-3" style="display: none;"></div>
                 <div class="modal-body px-4">
                     <div class="mb-3">
                         <label class="form-label small fw-bold">Property Name</label>
@@ -118,6 +127,31 @@
                 <div class="modal-footer border-0 px-4 pb-4">
                     <button type="submit" class="btn btn-primary px-4">Add Unit</button>
                     <button type="button" class="btn btn-outline-secondary px-4" data-bs-dismiss="modal">Clear</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="uploadUnitsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header border-0">
+                <h5 class="modal-title fw-bold">Upload Units</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="uploadUnitsForm" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="modal-body px-4">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">CSV or XLSX File</label>
+                        <input type="file" id="unitsFile" name="file" class="form-control" accept=".csv,.xlsx" required>
+                        <small class="text-muted d-block mt-2"><strong>Required Headers:</strong> property, name, rent_amount<br><strong>Optional Headers:</strong> description, status</small>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 px-4 pb-4">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Upload</button>
                 </div>
             </form>
         </div>
@@ -163,6 +197,59 @@ document.addEventListener('DOMContentLoaded', function() {
     const assignButtons = document.querySelectorAll('.assignTenantBtn');
     const detachButtons = document.querySelectorAll('.detachTenantBtn');
     const assignTenantForm = document.getElementById('assignTenantForm');
+    const addUnitForm = document.getElementById('addUnitForm');
+    
+    // ======================
+    // ADD UNIT FUNCTIONALITY
+    // ======================
+    if (addUnitForm) {
+        addUnitForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            
+            fetch('', {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: formData
+            })
+            .then(response => response.text())
+            .then(html => {
+                // Check if response contains form errors
+                if (html.includes('errorlist') || html.includes('This field is required')) {
+                    // Display errors in modal
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(html, 'text/html');
+                    const errorElements = doc.querySelectorAll('ul.errorlist');
+                    
+                    let errorHtml = '<ul>';
+                    errorElements.forEach(el => {
+                        const items = el.querySelectorAll('li');
+                        items.forEach(item => {
+                            errorHtml += '<li>' + item.textContent + '</li>';
+                        });
+                    });
+                    errorHtml += '</ul>';
+                    
+                    if (errorElements.length > 0) {
+                        document.getElementById('unitErrors').innerHTML = errorHtml;
+                        document.getElementById('unitErrors').style.display = 'block';
+                    } else {
+                        location.reload();
+                    }
+                } else {
+                    // Success - reload page
+                    location.reload();
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred');
+            });
+        });
+    }
     
     // ======================
     // ASSIGN TENANT FUNCTIONALITY
@@ -285,6 +372,57 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     });
+    
+    // ======================
+    // UPLOAD UNITS FUNCTIONALITY
+    // ======================
+    const uploadForm = document.getElementById('uploadUnitsForm');
+    
+    if (uploadForm) {
+        uploadForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const fileInput = document.getElementById('unitsFile');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                alert('Please select a file');
+                return;
+            }
+            
+            // Validate file type
+            const validTypes = ['text/csv', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'];
+            if (!validTypes.includes(file.type) && !file.name.endsWith('.csv') && !file.name.endsWith('.xlsx')) {
+                alert('Please upload a CSV or XLSX file');
+                return;
+            }
+            
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+            
+            fetch('/units/upload/', {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(`Successfully uploaded ${data.count} units`);
+                    location.reload();
+                } else {
+                    alert(data.message || 'Failed to upload units');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while uploading units');
+            });
+        });
+    }
     
     // ======================
     // DELETE UNITS FUNCTIONALITY

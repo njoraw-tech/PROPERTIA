@@ -3,30 +3,130 @@
 
 
 {% block content %}
-    <h1>Paymnets</h1>
-    <form method="post" enctype="multipart/form-data">
-        {% csrf_token %}
-        <div>
-            <label for="id_name"> select property</label>
-            <input type="text" name="name" id="id_name" required>
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Maintenance</h2>
+        <div class="d-flex gap-2">
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addMaintenanceModal">+ Add Maintenance</button>
         </div>
-          <div>
-            <label for="id_name"> select unit</label>
-            <input type="text" name="name" id="id_name" required>
+    </div>
+
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-body">
+            <h5 class="mb-3">Filters</h5>
+            <form method="GET" class="row g-3">
+                <div class="col-md-4">
+                    <select name="property" class="form-select">
+                        <option value="">All Properties</option>
+                        {% for p in properties %}
+                        <option value="{{ p.id }}" {% if selected_property|stringformat:"s" == p.id|stringformat:"s" %}selected{% endif %}>{{ p.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <select name="status" class="form-select">
+                        <option value="">All Status</option>
+                        <option value="pending" {% if selected_status == "pending" %}selected{% endif %}>Pending</option>
+                        <option value="completed" {% if selected_status == "completed" %}selected{% endif %}>Completed</option>
+                    </select>
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">FILTER</button>
+                </div>
+            </form>
         </div>
-        <div>       
-            <label for="id_address">date:</label>
-            <input type="text" name="address" id="id_address" required>
+    </div>
+
+    <div class="card shadow-sm border-0">
+        <div class="card-header bg-white py-3">
+            <h5 class="mb-0">Maintenance List</h5>
         </div>
-         <div>       
-            <label for="id_address">descrittion</label>
-            <input type="text" name="address" id="id_address" required>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="bg-light">
+                    <tr>
+                        <th>Date</th>
+                        <th>Property</th>
+                        <th>Unit</th>
+                        <th>Description</th>
+                        <th>Amount</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for m in maintenance_list %}
+                    <tr>
+                        <td>{{ m.date }}</td>
+                        <td>{{ m.property }}</td>
+                        <td>{{ m.unit }}</td>
+                        <td>{{ m.description }}</td>
+                        <td>{{ m.amount }}</td>
+                        <td>
+                            {% if m.status == 'completed' %}
+                                <span class="badge bg-success-subtle text-success rounded-pill">Completed</span>
+                            {% else %}
+                                <span class="badge bg-warning-subtle text-warning rounded-pill">Pending</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary">View</button>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="7" class="text-center text-muted">No maintenance records found.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
-         <div>       
-            <label for="id_address">amount</label>
-            <input type="text" name="address" id="id_address" required>
+    </div>
+
+    <!-- Add Maintenance Modal (structure only, needs backend) -->
+    <div class="modal fade" id="addMaintenanceModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header border-0">
+                    <h5 class="modal-title fw-bold">Add Maintenance</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body px-4">
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label class="form-label">Property</label>
+                            <select name="property" class="form-select">
+                                {% for p in properties %}
+                                <option value="{{ p.id }}">{{ p.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Unit</label>
+                            <select name="unit" class="form-select">
+                                {% for u in units %}
+                                <option value="{{ u.id }}">{{ u.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Date</label>
+                            <input type="text" name="date" class="form-control datepicker" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Description</label>
+                            <input type="text" name="description" class="form-control" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Amount</label>
+                            <input type="number" name="amount" class="form-control" required>
+                        </div>
+                        <div class="d-grid mt-4">
+                            <button type="submit" class="btn btn-primary">Add Maintenance</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
         </div>
-        <button type="submit">add paymnets</button>
-        <button type="submit">CLEAR</button>
-    </form>
+    </div>
+</div>
 {% endblock %}

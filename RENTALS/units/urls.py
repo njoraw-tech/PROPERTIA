@@ -26,4 +26,5 @@ urlpatterns = [
     path('assign/<int:pk>/', views.assign_tenant, name='assign_tenant'),
     path('detach/<int:pk>/', views.detach_tenant, name='detach_tenant'),
     path('delete/', views.delete_units, name='delete_units'),
+    path('upload/', views.upload_units, name='upload_units'),
 ]
